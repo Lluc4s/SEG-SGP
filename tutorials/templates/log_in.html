@@ -1,16 +1,33 @@
 {% extends 'base_content.html' %}
 {% block content %}
-<div class="container">
-  <div class="row">
-    <div class="col-sm-12 col-md-6 offset-md-3">
-      <h1>Log in</h1>
-      <form action="{% url 'log_in' %}" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ next }}">
-        {% include 'partials/bootstrap_form.html' with form=form %}
-        <input type="submit" value="Log in" class="btn btn-primary">
-      </form>
+<div class="container-fluid vh-100">
+  <div class="row h-100">
+    <!-- Left side for the image -->
+    <div class="col-md-6 p-0 image-container"></div>
+
+    <!-- Right side for the login form -->
+    <div class="col-md-6 d-flex justify-content-center align-items-center">
+      <div class="login-form-wrapper">
+        <h1>Login</h1>
+        <form action="{% url 'log_in' %}" method="post" class="login-form">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next }}">
+          {% include 'partials/bootstrap_form.html' with form=form %}
+          <input type="submit" value="Log in" class="btn btn-primary mt-3">
+          <div class="divider"> <!-- Divider to separate log in and sign up buttons-->
+            <span>or</span> 
+          </div>
+          <a href='{% url 'sign_up' %}' class="btn btn-lg btn-secondary mt-3"> <!-- New sign up button -->
+            Sign up
+          </a>
+        </form>
+      </div> 
+      <footer class="footer">
+        <span class="default-text">Created by Team Jackal</span>
+        <span class="hover-text">Created by Fasih, Leen, Lucas, Thenujan, Yara</span>
+      </footer>
     </div>
   </div>
 </div>
+
 {% endblock %}

@@ -113,3 +113,122 @@ h3.profile-title {
   text-decoration: underline;
   color: #0d6efd;
 }
+
+/* 
+ * Defining our custom font 
+ */
+
+@font-face {
+  font-family: 'ourFont';
+  src: url('/static/fonts/JetBrainsMono-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'ourFontBold';
+  src: url('/static/fonts/JetBrainsMono-Bold.ttf') format('truetype');
+}
+
+/* Using it all across the website */
+body {
+  font-family: ourFont;
+}
+
+/* 
+ * Log in 
+ */
+
+.login-form-wrapper {
+  width: 100%;
+  background-color: white;
+  padding: 20px;
+}
+
+/* Adjust 'Login' text so that it is bold and large */
+.login-form-wrapper h1 {
+  text-align: center;
+  font-family: ourFontBold;
+  font-size: 3.5rem;
+}
+
+/* Change colour appropriately */
+.login-form {
+  color: #3B38BD;
+}
+
+.image-container {
+  background-image: url("images/login.jpg");
+  background-size: cover;
+  background-position: center;
+  height: 100vh;  /* Ensures the div takes up the full viewport height */
+}
+
+/* Styling only the input fields in the login form */
+.login-form input, 
+.login-form textarea, 
+.login-form select {
+  background-color: #E9E9FF;  /* Light grey background */
+  border: 1px solid #ccc;     /* Light border */
+  padding: 10px;
+  border-radius: 5px;
+}
+
+/* Making button/input area fancier by adding hover functionality */
+.btn:hover,
+.login-form input:hover {
+  background-color: #E9E9FF !important;
+  color: #3B38BD; /* Inverting colours */
+  transform: scale(1.025); /* Increasing size of buttons/input area slightly */
+  transition: 1000ms;
+}
+
+.btn {
+  background-color: #3B38BD !important;
+  width: 100%;
+  border-radius: 20px !important;
+  font-size: 15px;
+}
+
+.divider { 
+  display: flex;
+  text-align: center;
+  align-items: center;
+  padding-top: 15px;
+  color: #3B38BD;
+}
+
+/* Creating a divider line (--- or ---) */
+.divider::before,
+.divider::after {
+  content: ""; /* Generate content for the lines */
+  flex: 1; /* Make the lines flexible to fill space */
+  border-top: 1px solid #3B38BD; /* Style the lines */
+  margin: 0 10px; /* Spacing around the text */
+}
+
+.footer {
+  position: fixed;
+  width: 500px;
+  bottom: 5px;
+  text-align: center;
+  align-items: center;
+  color: #3B38BD;
+  border-radius: 20px;
+  padding: 5px 20px 5px 20px;
+}
+
+.footer .hover-text {
+  display: none; /* Hide the hover text by default */
+}
+
+.footer:hover .default-text {
+  display: none; /* Hide the default text when hovered */
+}
+
+.footer:hover,
+.footer:hover .hover-text {
+  display: inline; /* Show the hover text when hovered */
+  background-color: #3B38BD !important;
+  color: #E9E9FF;
+  transform: scale(1.025);
+  transition: 1000ms, background-color 0ms;
+}

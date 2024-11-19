@@ -30,7 +30,7 @@ def home(request):
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
 
-    redirect_when_logged_in_url = None
+    redirect_when_logged_in_url = 'None' #  change to dashboard ?
 
     def dispatch(self, *args, **kwargs):
         """Redirect when logged in, or dispatch as normal otherwise."""
@@ -89,7 +89,7 @@ def log_out(request):
     """Log out the current user"""
 
     logout(request)
-    return redirect('home')
+    return redirect('log_in') # Replacing 'home' with 'log_in'
 
 
 class PasswordView(LoginRequiredMixin, FormView):
