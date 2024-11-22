@@ -2,6 +2,10 @@ from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from libgravatar import Gravatar
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class User(AbstractUser):
     """Model used for user authentication, and team member related information."""
@@ -17,6 +21,7 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=50, blank=False)
     last_name = models.CharField(max_length=50, blank=False)
     email = models.EmailField(unique=True, blank=False)
+    is_tutor = models.BooleanField('tutor status', default=False)
 
 
     class Meta:
@@ -40,3 +45,95 @@ class User(AbstractUser):
         """Return a URL to a miniature version of the user's gravatar."""
         
         return self.gravatar(size=60)
+
+class Tutor(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tutor_user"
+    )
+
+    languages_specialised = models.CharField(
+        max_length=200,  # Adjust length as needed
+        help_text="Comma-separated list of specialised languages. Example: Python, Java, SQL.",
+        blank=True,
+    )
+
+    def get_languages_list(self):
+        """Return a list of languages from the comma-separated field."""
+        if self.languages_specialised:
+            return [lang.strip() for lang in self.languages_specialised.split(',')]
+        return []
+
+class Tutee(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tutee_user"
+    )
+
+class Booking(models.Model):
+    
+    STATUS_CHOICES = [
+        ("Booked", "Booked"),
+        ("Completed", "Completed"),
+        ("Cancelled", "Cancelled"),
+    ]
+
+    date_time = models.DateTimeField()
+    duration = models.DurationField()
+    language = models.CharField(max_length=20, choices=settings.LANGUAGE_CHOICES)
+    tutor = models.ForeignKey(
+        Tutor,
+        on_delete=models.CASCADE,
+        related_name="tutor_bookings"
+    )
+    tutee = models.ForeignKey(
+        Tutee,
+        on_delete=models.CASCADE,
+        related_name="tutee_bookings"
+    )
+    status = models.CharField(
+    max_length=10,
+    choices=STATUS_CHOICES,
+    default="",
+    )
+    price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0.00
+    )
+
+    class Meta:
+        ordering = ["date_time"]
+
+    def clean(self):
+        # Enforce languages are matched
+        if self.language not in self.tutor.get_languages_list():
+            raise ValidationError("This tutor cannot teach the selected language. This tutor teaches " + self.tutor.languages_specialised)
+
+        if self.status == "":
+            raise ValidationError("Please select status")
+
+        if self.price < 0:
+            raise ValidationError("The price must be positive.")
+
+class Request(models.Model):
+    language = models.CharField(max_length=20, choices=settings.LANGUAGE_CHOICES);
+
+# @receiver(post_save,sender=User)
+# def user_create(sender,instance,created,**kwargs):
+#     if created:
+#         if not instance.is_staff:
+#             if instance.is_tutor:
+#                 # Tutor.objects.create(user=instance)
+#             else:
+#                 Tutee.objects.create(user=instance)
+
+# @receiver(post_save,sender=User)
+# def user_save(sender,instance,**kwargs):
+#     if not instance.is_staff:
+#         if instance.is_tutor:
+#             instance.tutor_user.save()
+#         else:
+#             instance.tutee_user.save()

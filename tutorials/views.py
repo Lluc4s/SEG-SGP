@@ -10,6 +10,7 @@ from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
+from .models import User, Booking, Tutor, Tutee
 
 
 @login_required
@@ -17,7 +18,21 @@ def dashboard(request):
     """Display the current user's dashboard."""
 
     current_user = request.user
-    return render(request, 'dashboard.html', {'user': current_user})
+
+    if current_user.is_staff:
+        bookings = Booking.objects.all()
+    elif current_user.is_tutor:
+        # retrieve bookings where they are the tutor
+        tutor_user = Tutor.objects.get(user=current_user)
+        bookings = Booking.objects.filter(tutor=tutor_user)
+        # bookings = None
+    else:
+        # retrieve bookings where they are the tutee
+        tutee_user = Tutee.objects.get(user=current_user)
+        bookings = Booking.objects.filter(tutee=tutee_user)
+        # bookings = None
+
+    return render(request, 'dashboard.html', {'user': current_user, 'bookings': bookings})
 
 
 @login_prohibited

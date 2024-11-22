@@ -2,7 +2,8 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
-from .models import User
+from .models import User, Tutor, Tutee
+from django.conf import settings
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -86,15 +87,40 @@ class PasswordForm(NewPasswordMixin):
             self.user.save()
         return self.user
 
-
 class SignUpForm(NewPasswordMixin, forms.ModelForm):
     """Form enabling unregistered users to sign up."""
+
+    is_tutor = forms.BooleanField(
+        required=False,
+        widget=forms.RadioSelect(choices=[(True, "Tutor"), (False, "Tutee")]),
+        initial=False,
+        label="I am:",
+    )
+
+    languages_specialised = forms.MultipleChoiceField(
+        required=False,  # Will be validated only if is_tutor=True
+        choices=settings.LANGUAGE_CHOICES,
+        widget=forms.CheckboxSelectMultiple(),  # Initially hidden
+        label="Languages Specialised",
+    )
 
     class Meta:
         """Form options."""
 
         model = User
-        fields = ['first_name', 'last_name', 'username', 'email']
+        fields = ['is_tutor', 'languages_specialised', 'first_name', 'last_name', 'username', 'email']
+
+    def clean_languages_specialised(self):
+        """Custom validation for the 'languages_specialised' field."""
+        is_tutor = self.cleaned_data.get('is_tutor')
+        languages_specialised = self.cleaned_data.get('languages_specialised', [])
+
+        # If the user is a tutor and no languages are selected, raise a validation error
+        if is_tutor and not languages_specialised:
+            raise forms.ValidationError("Please select one or more languages if you are a tutor.")
+
+        return languages_specialised
+
 
     def save(self):
         """Create a new user."""
@@ -106,5 +132,16 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
             last_name=self.cleaned_data.get('last_name'),
             email=self.cleaned_data.get('email'),
             password=self.cleaned_data.get('new_password'),
+            is_tutor=self.cleaned_data.get('is_tutor')
         )
+
+        if self.cleaned_data.get('is_tutor'):
+            Tutor.objects.create(
+                user=user,
+                languages_specialised=", ".join(self.cleaned_data.get('languages_specialised', []))  # Convert list to a string
+            )
+        else:
+            Tutee.objects.create(user=user)
+
+
         return user

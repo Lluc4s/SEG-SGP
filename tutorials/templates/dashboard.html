@@ -3,7 +3,48 @@
 <div class="container">
   <div class="row">
     <div class="col-12">
-      <h1>Welcome to your dashboard {{ user.username }}</h1>
+      <h1>Welcome to your dashboard, {{ user.username }}</h1>
+      
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Duration</th>
+            <th>Language</th>
+            {% if user.is_staff %}
+              <th>Tutor</th>
+              <th>Tutee</th>
+            {% elif user.is_tutor%}
+              <th>Tutee</th>
+            {% else %}
+              <th>Tutor</th>
+            {% endif %}
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for booking in bookings %}
+          <tr>
+            <td>{{ booking.date_time }}</td>
+            <td>{{ booking.duration }}</td>
+            <td>{{ booking.language }}</td>
+            {% if user.is_staff %}
+              <td>{{ booking.tutor.user.username }}</td>
+              <td>{{ booking.tutee.user.username }}</td>
+            {% elif user.is_tutor%}
+              <td>{{ booking.tutee.user.username }}</td>
+            {% else %}
+              <td>{{ booking.tutor.user.username }}</td>
+            {% endif %}
+            <td> {{ booking.status }} </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7">No bookings available.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

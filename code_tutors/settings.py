@@ -142,3 +142,13 @@ REDIRECT_URL_WHEN_LOGGED_IN = 'dashboard'
 MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
+
+# Available languages
+LANGUAGE_CHOICES = [
+    ('C++', 'C++'),
+    ('Python', 'Python'),
+    ('Java', 'Java'),
+    ('JavaScript', 'JavaScript'),
+    ('R', 'R'),
+    ('SQL', 'SQL'),
+]

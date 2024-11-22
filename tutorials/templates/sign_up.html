@@ -7,6 +7,33 @@
       <form action="{% url 'sign_up' %}" method="post">
         {% csrf_token %}
         {% include 'partials/bootstrap_form.html' with form=form %}
+
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+              // Get references to the is_tutor radio buttons and the language field
+              const userTypeRadios = document.querySelectorAll('input[name="is_tutor"]');
+              const languageField = document.getElementById('language-field');
+      
+              // Function to toggle language field visibility
+              function toggleLanguageField() {
+                  const selectedValue = document.querySelector('input[name="is_tutor"]:checked').value;
+                  if (selectedValue === "True") {
+                      languageField.style.display = "block";
+                  } else {
+                      languageField.style.display = "none";
+                  }
+              }
+      
+              // Add event listeners to radio buttons
+              userTypeRadios.forEach(radio => {
+                  radio.addEventListener("change", toggleLanguageField);
+              });
+      
+              // Initialize visibility on page load
+              toggleLanguageField();
+          });
+        </script>
+
         <input type="submit" value="Sign up" class="btn btn-primary">
       </form>
     </div>
