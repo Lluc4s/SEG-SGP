@@ -10,6 +10,7 @@ from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
+import datetime
 
 
 @login_required
@@ -26,7 +27,17 @@ def home(request):
 
     return render(request, 'home.html')
 
-
+def invoice_view(request):
+    #example values
+    invoices = [
+        {"number": "INV-0001", "date": datetime.date.today(), "status": "Paid", "description": "Python Tutoring Session", "total": 20.0},
+        {"number": "INV-0002", "date":datetime.date.today() + datetime.timedelta(days=30), "status": "Due", "description": "C++ Tutoring session", "total": 50.0},
+    ]
+    return render(request, 'invoices.html', {"invoices": invoices})
+   
+def pay_invoice(request, invoice_id):
+    
+    return redirect('invoices')
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
 
