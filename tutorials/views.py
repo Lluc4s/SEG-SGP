@@ -11,6 +11,7 @@ from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee
+import datetime
 
 
 @login_required
@@ -41,7 +42,16 @@ def home(request):
 
     return render(request, 'home.html')
 
-
+def invoices(request):
+    #example values
+    invoices = [
+        {"number": "INV-0001", "date": datetime.date.today(), "status": "Paid", "description": "Python Tutoring Session", "total": 20.0},
+        {"number": "INV-0002", "date":datetime.date.today() + datetime.timedelta(days=30), "status": "Due", "description": "C++ Tutoring session", "total": 50.0},
+    ]
+    return render(request, 'invoices.html', {"invoices": invoices})
+   
+    
+    return redirect('invoices')
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
 
