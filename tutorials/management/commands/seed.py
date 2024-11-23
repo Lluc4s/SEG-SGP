@@ -7,9 +7,9 @@ from faker import Faker
 from random import randint, random
 
 user_fixtures = [
-    {'username': '@johndoe', 'email': 'john.doe@example.org', 'first_name': 'John', 'last_name': 'Doe'},
-    {'username': '@janedoe', 'email': 'jane.doe@example.org', 'first_name': 'Jane', 'last_name': 'Doe'},
-    {'username': '@charlie', 'email': 'charlie.johnson@example.org', 'first_name': 'Charlie', 'last_name': 'Johnson'},
+    {'username': '@johndoe', 'email': 'john.doe@example.org', 'first_name': 'John', 'last_name': 'Doe', 'is_superuser': True, 'is_staff': True, 'is_tutor': False},
+    {'username': '@janedoe', 'email': 'jane.doe@example.org', 'first_name': 'Jane', 'last_name': 'Doe', 'is_superuser': False, 'is_staff': False, 'is_tutor': True},
+    {'username': '@charlie', 'email': 'charlie.johnson@example.org', 'first_name': 'Charlie', 'last_name': 'Johnson',  'is_superuser': False, 'is_staff': False, 'is_tutor': False},
 ]
 
 
@@ -29,7 +29,7 @@ class Command(BaseCommand):
 
     def create_users(self):
         self.generate_user_fixtures()
-        self.generate_random_users()
+        # self.generate_random_users()
 
     def generate_user_fixtures(self):
         for data in user_fixtures:
@@ -63,6 +63,9 @@ class Command(BaseCommand):
             password=Command.DEFAULT_PASSWORD,
             first_name=data['first_name'],
             last_name=data['last_name'],
+            is_superuser=data['is_superuser'],
+            is_staff=data['is_staff'],
+            is_tutor=data['is_tutor']
         )
 
 def create_username(first_name, last_name):

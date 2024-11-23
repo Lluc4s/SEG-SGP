@@ -3,7 +3,7 @@
   {% if user.is_authenticated %}
     <ul class="nav flex-column" style="flex-grow: 1;">
       <li class="nav-item">
-          <a class="nav-link text-white" href="#">Bookings</a>
+          <a class="nav-link text-white" href="{% url 'dashboard' %}">Bookings</a>
       </li>
       {% if user.is_staff %}
         <li class="nav-item">
