@@ -7,10 +7,10 @@
       </li>
       {% if user.is_staff %}
         <li class="nav-item">
-          <a class="nav-link text-white" href="/tutors">Tutors</a>
+          <a class="nav-link text-white" href="{% url 'tutors' %}">Tutors</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-white" href="/tutees">Tutees</a>
+          <a class="nav-link text-white" href="{% url 'tutees' %}">Tutees</a>
         </li>
       {% elif not user.is_tutor%}
         <li class="nav-item">

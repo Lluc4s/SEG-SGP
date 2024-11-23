@@ -232,3 +232,17 @@ body {
   transform: scale(1.025);
   transition: 1000ms, background-color 0ms;
 }
+
+/* Custom row colors for table-striped */
+.table-striped tbody tr:nth-of-type(even) {
+  background-color: #ffffff;  /* White */
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: #E9E9FF; /* Light Purple */
+}
+
+/* Customize the hover effect */
+.table-striped tbody tr:hover {
+  background-color: #e0e0f759; /* LightBlue */
+}

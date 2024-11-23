@@ -13,6 +13,17 @@ from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee
 import datetime
 
+@login_required
+def tutors(request):
+    """Display a list of tutors."""
+    tutors_list = Tutor.objects.all()  # Retrieve all tutors from the database
+    return render(request, 'tutors.html', {'tutors': tutors_list})
+
+@login_required
+def tutees(request):
+    """Display a list of tutees."""
+    tutees_list = Tutee.objects.all()  # Retrieve all Tutee objects
+    return render(request, 'tutees.html', {'tutees': tutees_list})
 
 @login_required
 def dashboard(request):

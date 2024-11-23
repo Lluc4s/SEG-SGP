@@ -1,0 +1,35 @@
+{% extends 'base_content.html' %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h1>Listed Tutees</h1>
+      
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Username</th>
+            <th>Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tutee in tutees %}
+          <tr>
+            <td>{{ tutee.user.first_name }}</td>
+            <td>{{ tutee.user.last_name }}</td>
+            <td>{{ tutee.user.username }}</td>
+            <td>{{ tutee.user.email }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7">No registered tutees.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
