@@ -2,7 +2,7 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
-from .models import User, Tutor, Tutee
+from .models import User, Tutor, Tutee, Request, Booking
 from django.conf import settings
 
 class LogInForm(forms.Form):
@@ -145,3 +145,46 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
 
 
         return user
+
+class RequestForm(forms.ModelForm):
+    """Form enabling tutees to submit a request related to a booking."""
+
+    class Meta:
+        """Form options."""
+        model = Request
+        fields = ['booking', 'request_type', 'details']
+        widgets = {
+            'booking': forms.Select(attrs={'class': 'form-control'}),
+            'request_type': forms.Select(attrs={'class':'form-control'}),
+            'details': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Provide additional details if needed', 'class': 'form-control'}),
+        }
+        labels = {
+            'booking': 'Select Booking',
+            'request_type': 'Request Type',
+            'details': 'Additional Details',
+        }
+        help_texts = {
+            'booking': 'Select the booking related to your request.',
+            'request_type': 'Select the type of request (e.g., Change or Cancel the booking).',
+            'details': 'Provide any relevant information about your request.',
+        }
+
+    def __init__(self, tutee, *args, **kwargs):
+        """Filter bookings for the logged-in tutee."""
+        super().__init__(*args, **kwargs)
+        self.fields['booking'].queryset = Booking.objects.filter(tutee=tutee)
+        self.fields['request_type'].empty_label = None
+    
+    def save(self, commit=True):
+        """Create and save the Request model, associating it with the tutee."""
+        # Create a new Request instance but do not save it yet
+        request_instance = super().save(commit=False)
+
+        # Set the tutee for the request
+        tutee = self.instance.booking.tutee  # Get the tutee from the booking
+        request_instance.tutee = tutee
+
+        # Save the request instance
+        if commit:
+            request_instance.save()
+        return request_instance

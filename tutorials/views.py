@@ -4,13 +4,13 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ImproperlyConfigured
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm
+from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, RequestForm
 from tutorials.helpers import login_prohibited
-from .models import User, Booking, Tutor, Tutee
+from .models import User, Booking, Tutor, Tutee, Request
 import datetime
 
 @login_required
@@ -45,6 +45,29 @@ def dashboard(request):
         # bookings = None
 
     return render(request, 'dashboard.html', {'user': current_user, 'bookings': bookings})
+
+@login_required
+def requests(request):
+    """Allow tutees to submit a request related to a booking."""
+    try:
+        tutee = request.user.tutee_user  # Access the related Tutee object
+    except Tutee.DoesNotExist:
+        # Handle the case where the user is not a tutee
+        return render(request, 'error.html', {'message': 'You do not have a tutee profile.'})
+    
+    # Handle the form submission
+    if request.method == 'POST':
+        form = RequestForm(tutee=tutee, data=request.POST)  # Pass tutee into form
+        if form.is_valid():
+            form.save()  # Calls the save method of the form to save the request
+            return redirect('requests')  # Redirect to the requests list page or confirmation page
+    else:
+        form = RequestForm(tutee=tutee)  # Initialize the form for GET request
+
+    # Add bookings for the tutee to the form context (for dropdown options)
+    bookings = Booking.objects.filter(tutee=tutee)
+
+    return render(request, 'requests.html', {'form': form, 'bookings': bookings})
 
 
 @login_prohibited

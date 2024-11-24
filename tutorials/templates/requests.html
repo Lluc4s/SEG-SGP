@@ -1,0 +1,45 @@
+{% extends 'base_content.html' %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h1 class="text-start my-4" style="font-family: ourFontBold; color: #3B38BD;">Submit a Request</h1>
+      <form action="{% url 'requests' %}" method="post">
+        {% csrf_token %}
+        
+        <!-- Booking Selection -->
+        <div class="mb-3">
+          <label for="id_booking" class="form-label">{{ form.booking.label }}</label>
+          {{ form.booking }}
+          {% if form.booking.help_text %}
+          <small class="form-text text-muted">{{ form.booking.help_text }}</small>
+          {% endif %}
+        </div>
+
+        <!-- Request Type -->
+        <div class="mb-3">
+          <label for="id_request_type" class="form-label">{{ form.request_type.label }}</label>
+          {{ form.request_type }}
+          {% if form.request_type.help_text %}
+          <small class="form-text text-muted">{{ form.request_type.help_text }}</small>
+          {% endif %}
+        </div>
+
+        <!-- Additional Details -->
+        <div class="mb-3">
+          <label for="id_details" class="form-label">{{ form.details.label }}</label>
+          {{ form.details }}
+          {% if form.details.help_text %}
+          <small class="form-text text-muted">{{ form.details.help_text }}</small>
+          {% endif %}
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-end mt-4">
+          <button type="submit" class="btn btn-primary">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
