@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 class User(AbstractUser):
     """Model used for user authentication, and team member related information."""
@@ -117,9 +118,58 @@ class Booking(models.Model):
 
         if self.price < 0:
             raise ValidationError("The price must be positive.")
+        
+    def __str__(self):
+        # Return a more informative string
+        return f"{self.date_time.strftime('%Y-%m-%d %H:%M')} : {self.language} with {self.tutor.user.full_name()}"
 
 class Request(models.Model):
-    language = models.CharField(max_length=20, choices=settings.LANGUAGE_CHOICES);
+    REQUEST_CHOICES = [
+        ("Change", "Change Booking"),
+        ("Cancel", "Cancel Booking"),
+    ]
+
+    tutee = models.ForeignKey(
+        Tutee,
+        on_delete=models.CASCADE,
+        related_name="requests",
+        help_text="The tutee making the request.",
+        default=""
+    )
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name="requests",
+        help_text="The booking related to the request.",
+        default=""
+    )
+    request_type = models.CharField(
+        max_length=10,
+        choices=REQUEST_CHOICES,
+        help_text="Type of request (e.g., change or cancel the booking).",
+        default="Change Booking"
+    )
+    details = models.TextField(
+        blank=True,
+        help_text="Optional details or comments about the request."
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(
+        max_length=10,
+        choices=[
+            ("Pending", "Pending"),
+            ("Approved", "Approved"),
+            ("Rejected", "Rejected"),
+        ],
+        default="Pending",
+        help_text="Current status of the request.",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.tutee.user.full_name()} - {self.request_type} - {self.status}"
 
 # @receiver(post_save,sender=User)
 # def user_create(sender,instance,created,**kwargs):

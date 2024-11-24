@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Booking, Tutor, Tutee
+from .models import User, Booking, Tutor, Tutee, Request
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -106,3 +106,29 @@ class TuteeAdmin(admin.ModelAdmin):
         """Customize the queryset to include only users marked as tutees."""
         qs = super().get_queryset(request)
         return qs.filter(user__is_tutor=False)
+    
+@admin.register(Request)
+class RequestAdmin(admin.ModelAdmin):
+    """Admin customization for Request model."""
+
+    # Fields to display in the admin list view
+    list_display = ('tutee', 'booking', 'request_type', 'status', 'created_at')
+
+    # Fields to filter by in the admin
+    list_filter = ('status', 'request_type', 'tutee', 'booking')
+
+    # Fields to search for in the admin
+    search_fields = ('tutee__user__username', 'booking__tutor__user__username', 'request_type')
+
+    # Ordering in the admin list view
+    ordering = ('-created_at',)
+
+    # Customize form fields displayed in the admin
+    fieldsets = (
+        (None, {
+            'fields': ('tutee', 'booking', 'request_type', 'details', 'status'),
+        }),
+        ('Important Dates', {
+            'fields': ('created_at',),
+        }),
+    )
