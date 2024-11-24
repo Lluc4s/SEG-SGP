@@ -138,7 +138,7 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
         if self.cleaned_data.get('is_tutor'):
             Tutor.objects.create(
                 user=user,
-                languages_specialised=", ".join(self.cleaned_data.get('languages_specialised', []))  # Convert list to a string
+                languages_specialised=", ".join(self.cleaned_data.get('languages_specialised'))  # Convert list to a string
             )
         else:
             Tutee.objects.create(user=user)
