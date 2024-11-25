@@ -28,10 +28,16 @@
       </li>
     {% elif not user.is_tutor %}
       <li class="nav-item">
-        <a class="nav-link {% if request.path == '/requests/' %}active{% endif %}" href="/requests">Requests</a>
+        <a class="nav-link {% if request.path == '/requests/' %}active{% endif %}" href="/requests">
+          <i class="bi bi-pencil-square me-2"></i>
+          Requests
+        </a>
       </li>
       <li class="nav-item {% if request.path == '/invoices/' %}active{% endif %}">
-        <a class="nav-link" href="/invoices">Invoices</a>
+        <a class="nav-link" href="/invoices">
+          <i class="bi bi-cash-coin me-2"></i>
+          Invoices
+        </a>
       </li>
     {% endif %}
   </ul>
