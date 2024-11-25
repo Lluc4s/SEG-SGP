@@ -1,13 +1,18 @@
 {% extends 'base.html' %}
 {% block body %}
-<div class="container-fluid">
+<div class="container-fluid" style="background-color: #3B38BD;">
   <div class="row">
-    <!--Navigation Bar-->
+    <!-- Navigation Bar -->
+    <div class="col w-25 p-0">
       {% include 'partials/navbar.html' %}
-      {% include 'partials/messages.html' %}
+    </div>
+
     <!-- Main Content Area -->
-  <div class="col-md-9">
-        {% block content %}
-          {% endblock %}
+    <div class="col-md-9 w-75 custom-container">
+      {% block content %}
+      {% endblock %}
+    </div>
   </div>
+</div>
 {% endblock %}
+
