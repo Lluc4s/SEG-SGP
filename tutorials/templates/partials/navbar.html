@@ -1,34 +1,56 @@
-<div class="col-md-3 body text-white p-3" style="background-color: #3B38BD; display: flex; flex-direction: column; height: 100vh;">
-  <h2 class="text-center" style="font-family: ourFontBold;">LOGO</h2>
+<nav class="custom-navbar d-flex flex-column vh-100 w-100 p-3">
+  <div class="w-100 px-auto d-flex justify-content-center pb-4 mb-3 border-bottom border-white">
+    <a class="navbar-brand fs-3 d-flex align-items-center" href="{% url 'dashboard' %}">
+      <i class="bi bi-code-slash fs-1 me-3"></i>
+      Code Tutors
+    </a>
+  </div>
   {% if user.is_authenticated %}
-    <ul class="nav flex-column" style="flex-grow: 1;">
+  <ul class="nav flex-column w-100 px-auto">
+    <li class="nav-item">
+      <a class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}" href="{% url 'dashboard' %}">
+        <i class="bi bi-grid me-2"></i>
+        Bookings
+      </a>
+    </li>
+    {% if user.is_staff %}
       <li class="nav-item">
-          <a class="nav-link text-white" href="{% url 'dashboard' %}">Bookings</a>
+        <a class="nav-link {% if request.path == '/tutees/' %}active{% endif %}" href="{% url 'tutees' %}">
+          <i class="bi bi-person-fill me-2"></i>
+          Tutees
+        </a>
       </li>
-      {% if user.is_staff %}
-        <li class="nav-item">
-          <a class="nav-link text-white" href="{% url 'tutors' %}">Tutors</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-white" href="{% url 'tutees' %}">Tutees</a>
-        </li>
-      {% elif not user.is_tutor%}
-        <li class="nav-item">
-            <a class="nav-link text-white" href="/requests">Requests</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-white" href="/invoices">Invoices</a>
-        </li>
-      {% endif %}
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/tutors/' %}active{% endif %}" href="{% url 'tutors' %}">
+          <i class="bi bi-person-lines-fill me-2"></i>
+          Tutors
+        </a>
+      </li>
+    {% elif not user.is_tutor %}
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/requests/' %}active{% endif %}" href="/requests">Requests</a>
+      </li>
+      <li class="nav-item {% if request.path == '/invoices/' %}active{% endif %}">
+        <a class="nav-link" href="/invoices">Invoices</a>
+      </li>
+    {% endif %}
+  </ul>
+  <div class="mt-auto">
+  </div>
+  <div>
+
+  </div>
+  <div class="dropup dropup-center w-100 px-auto d-flex flex-column align-items-center border-top border-white pt-4">
+    <i class="bi bi-person-circle fs-1 text-white"></i>
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+      {{ user.username }}
+    </a>
+    <ul class="dropdown-menu">
+      <li><a class="dropdown-item" href="{% url 'profile' %}">Change profile</a></li>
+      <li><a class="dropdown-item" href="{% url 'password' %}">Change password</a></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item" href="{% url 'log_out' %}">Log out</a></li>
     </ul>
-    <!-- Username and logout at the bottom -->
-    <div class="mt-auto text-center">
-        <li class="nav-item">
-          <a class="nav-link text-white" href="#">{{ user.username }}</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-white" href="{% url 'log_out' %}">Logout</a>
-      </li>
-    </div>
+  </div>
   {% endif %}
-</div>
+</nav>
