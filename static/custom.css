@@ -296,3 +296,36 @@ body {
 .table-striped tbody tr:hover {
   background-color: #e0e0f759; /* LightBlue */
 }
+
+/* Container for filter labels */
+.filter-labels {
+  display: flex; 
+  gap: 10px; 
+}
+
+/* Plain text styling for filter labels */
+.filter-label {
+  color: #333; 
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer; 
+  transition: color 0.3s; 
+}
+
+/* Hover state for labels */
+.filter-label:hover {
+  color: black;
+}
+
+/* Active label styling */
+.filter-label.active {
+  color: var(--dark-purple); 
+  font-weight: bold; 
+}
+
+/* Styling the filter separator */
+.filter-separator {
+  border: none; /* Remove default border */
+  border-top: 1px solid #aaaaaa; /* Add a light gray horizontal line */
+  margin: 5px 0; /* Add spacing around the line */
+}

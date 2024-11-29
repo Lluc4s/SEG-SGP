@@ -152,3 +152,11 @@ LANGUAGE_CHOICES = [
     ('R', 'R'),
     ('SQL', 'SQL'),
 ]
+
+# Available durations
+DURATION_CHOICES = [
+    ('30 mins', '30 mins'),
+    ('1 hr', '1 hr'),
+    ('1 hr 30 mins', '1 hr 30 mins'),
+    ('2 hrs', '2 hrs')
+]

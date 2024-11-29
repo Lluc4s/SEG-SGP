@@ -4,7 +4,24 @@
   <div class="row">
     <div class="col-12">
       <h1>Bookings</h1>
-      
+      <div class="filter-labels mb-3">
+        <a href="?filter=All" class="filter-label {% if filter_status == 'All' %}active{% endif %}">
+            All
+        </a>
+        <a href="?filter=Booked" class="filter-label {% if filter_status == 'Booked' %}active{% endif %}">
+            Booked
+        </a>
+        <a href="?filter=Completed" class="filter-label {% if filter_status == 'Completed' %}active{% endif %}">
+            Completed
+        </a>
+        <a href="?filter=Cancelled" class="filter-label {% if filter_status == 'Cancelled' %}active{% endif %}">
+            Cancelled
+        </a>
+    </div>
+
+    <hr class="filter-separator">
+
+    
       <table class="table table-striped">
         <thead>
           <tr>
@@ -29,12 +46,12 @@
             <td>{{ booking.duration }}</td>
             <td>{{ booking.language }}</td>
             {% if user.is_staff %}
-              <td>{{ booking.tutor.user.username }}</td>
-              <td>{{ booking.tutee.user.username }}</td>
+              <td>{{ booking.tutor.user.first_name }}</td>
+              <td>{{ booking.tutee.user.first_name }}</td>
             {% elif user.is_tutor%}
-              <td>{{ booking.tutee.user.username }}</td>
+              <td>{{ booking.tutee.user.first_name }}</td>
             {% else %}
-              <td>{{ booking.tutor.user.username }}</td>
+              <td>{{ booking.tutor.user.first_name }}</td>
             {% endif %}
             <td> {{ booking.status }} </td>
           </tr>

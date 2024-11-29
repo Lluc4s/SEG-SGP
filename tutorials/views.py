@@ -12,6 +12,7 @@ from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, Reque
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request
 import datetime
+from django.core.paginator import Paginator
 
 @login_required
 def tutors(request):
@@ -31,6 +32,8 @@ def dashboard(request):
 
     current_user = request.user
 
+    filter_status = request.GET.get('filter', 'All')  # Default to 'All'
+
     if current_user.is_staff:
         bookings = Booking.objects.all()
     elif current_user.is_tutor:
@@ -43,6 +46,26 @@ def dashboard(request):
         tutee_user = Tutee.objects.get(user=current_user)
         bookings = Booking.objects.filter(tutee=tutee_user)
         # bookings = None
+    
+    # Apply filtering by status
+    if filter_status == 'Booked':
+        bookings = bookings.filter(status='Booked')
+    elif filter_status == 'Completed':
+        bookings = bookings.filter(status='Completed')
+    elif filter_status == 'Cancelled':
+        bookings = bookings.filter(status='Cancelled')
+
+    #if implemented need to add arrow button to get to the next page
+    #paginator = Paginator(bookings, 10)  # Show 10 bookings per page
+    #page_number = request.GET.get('page')
+    #page_obj = paginator.get_page(page_number)
+    
+    # Render the dashboard with filtered bookings
+    return render(request, 'dashboard.html', {
+        'user': current_user,
+        'bookings': bookings,
+        'filter_status': filter_status,  # Pass filter status to highlight active filter
+    })
 
     return render(request, 'dashboard.html', {'user': current_user, 'bookings': bookings})
 
