@@ -1,3 +1,4 @@
+import uuid
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -77,15 +78,50 @@ def home(request):
     return render(request, 'home.html')
 
 def invoices(request):
-    #example values
-    invoices = [
-        {"number": "INV-0001", "date": datetime.date.today(), "status": "Paid", "description": "Python Tutoring Session", "total": 20.0},
-        {"number": "INV-0002", "date":datetime.date.today() + datetime.timedelta(days=30), "status": "Due", "description": "C++ Tutoring session", "total": 50.0},
-    ]
+    current_user = request.user
+    invoices = []
+
+    if current_user.is_tutor:
+        tutor_user = Tutor.objects.get(user=current_user)
+        bookings = Booking.objects.filter(tutor=tutor_user)
+    else:
+        tutee_user = Tutee.objects.get(user=current_user)
+        bookings = Booking.objects.filter(tutee=tutee_user)
+
+
+    if request.method == 'POST':
+        booking_id = request.POST.get('invoice_id')  
+        new_status = request.POST.get('new_status')
+        booking = Booking.objects.get(id=booking_id)
+        if new_status == "Paid":
+            booking.is_paid = True
+        else:
+            booking.is_paid = False
+        booking.save()  
+        return redirect('invoices')  
+
+    for booking in bookings:
+        if not booking.invoice_id:  # Generate invoice_id if missing
+            booking.invoice_id = f"INV-{uuid.uuid4().hex[:8].upper()}"
+            booking.save()
+
+        if booking.is_paid:
+            status = "Paid"
+        else:
+            status = "Due"
+
+        invoices.append({
+            "id": booking.id, 
+            "number": booking.invoice_id,
+            "date": booking.date_time,
+            "status": status,
+            "description": booking.language,
+            "total": booking.price,
+        })
+
     return render(request, 'invoices.html', {"invoices": invoices})
    
     
-    return redirect('invoices')
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
 

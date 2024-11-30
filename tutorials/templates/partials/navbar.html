@@ -39,6 +39,13 @@
           Invoices
         </a>
       </li>
+      {% else %}
+      <li class="nav-item {% if request.path == '/invoices/' %}active{% endif %}">
+        <a class="nav-link" href="/invoices">
+          <i class="bi bi-cash-coin me-2"></i>
+          Invoices
+        </a>
+      </li>
     {% endif %}
   </ul>
   <div class="mt-auto">

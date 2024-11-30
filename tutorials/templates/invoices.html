@@ -1,20 +1,24 @@
 {% extends 'base_content.html' %}
 {% block content %}
-    <div class="col-md-9">
-        <h1 class="text-start my-4" style="font-family: ourFontBold; color: #3B38BD;">Invoices</h1>
-        <table class="table table-bordered table-hover table-striped">
-        <thead class="table-header-theme">
-          <tr>
-            <th scope="col">Invoice #</th>
-            <th scope="col">Date</th>
-            <th scope="col">Status</th>
-            <th scope="col">Description</th>
-            <th scope="col">Total</th>
-            <th>Action</th>
-        </tr>
-        </thead>
-        <tbody>
-          {% for invoice in invoices %}
+    <dev class="w-100">
+      <dev class="row">
+        <div class="col-12">
+          <h1>Invoices</h1>
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Descreption</th>
+                <th>Total</th>
+                {% if user.is_tutor %}
+                  <th>Action</th>
+                {% endif %}
+                </tr>
+                </thead>
+                <tbody>
+                  {% for invoice in invoices %}
           <tr>
             <td>{{ invoice.number }}</td>
             <td>{{ invoice.date }}</td>
@@ -27,13 +31,25 @@
             </td>
             <td>{{ invoice.description }}</td>
             <td>${{ invoice.total }}</td>
-            <td>
-                <button class="btn btn-secondary" disabled>Pay</button>
+            {% if user.is_tutor %}
+              <td>
+                <form method="POST" style="display: inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="invoice_id" value="{{ invoice.id }}">
+                  {% if invoice.status == "Due" %}
+                  <input type="hidden" name="new_status" value="Paid">
+                  <button type="submit" class="btn btn-success">Mark as Paid</button>
+                  {% elif invoice.status == "Paid" %}
+                  <input type="hidden" name="new_status" value="Due">
+                  <button type="submit" class="btn btn-warning">Mark as Due</button>
+                  {% endif %}
+                </form>
               </td>
+            {% endif %}
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5" class="text-center">No invoices available.</td>
+            <td colspan="7">No Invoices available.</td>
           </tr>
           {% endfor %}
         </tbody>
