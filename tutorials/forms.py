@@ -152,20 +152,23 @@ class RequestForm(forms.ModelForm):
     class Meta:
         """Form options."""
         model = Request
-        fields = ['booking', 'request_type', 'details']
+        fields = ['booking', 'request_type', 'frequency', 'details']
         widgets = {
             'booking': forms.Select(attrs={'class': 'form-control'}),
             'request_type': forms.Select(attrs={'class':'form-control'}),
+            'frequency': forms.Select(attrs={'class': 'form-control'}),
             'details': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Provide additional details if needed', 'class': 'form-control'}),
         }
         labels = {
             'booking': 'Select Booking',
             'request_type': 'Request Type',
+            'frequency' : 'Frequency',
             'details': 'Additional Details',
         }
         help_texts = {
             'booking': 'Select the booking related to your request.',
             'request_type': 'Select the type of request (e.g., Change or Cancel the booking).',
+            'frequency' : "Select how often this request should be repeated, if applicable.",
             'details': 'Provide any relevant information about your request.',
         }
 
@@ -174,6 +177,7 @@ class RequestForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['booking'].queryset = Booking.objects.filter(tutee=tutee)
         self.fields['request_type'].empty_label = None
+        self.fields['frequency'].empty_label = None
     
     def save(self, commit=True):
         """Create and save the Request model, associating it with the tutee."""

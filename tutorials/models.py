@@ -116,6 +116,13 @@ class Request(models.Model):
         ("Cancel", "Cancel Booking"),
     ]
 
+    FREQUENCY_CHOICES = [
+        ("One-time", "One-time"),
+        ("Weekly", "Weekly"),
+        ("Bi-weekly", "Bi-weekly"),
+        ("Monthly", "Monthly"),
+    ]
+
     tutee = models.ForeignKey(
         Tutee,
         on_delete=models.CASCADE,
@@ -135,6 +142,12 @@ class Request(models.Model):
         choices=REQUEST_CHOICES,
         help_text="Type of request (e.g., change or cancel the booking).",
         default="Change Booking"
+    )
+    frequency = models.CharField(
+        max_length=15,
+        choices=FREQUENCY_CHOICES,
+        help_text="How often the request should recur.",
+        default="One-time"
     )
     details = models.TextField(
         blank=True,

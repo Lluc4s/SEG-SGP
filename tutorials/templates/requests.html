@@ -1,45 +1,59 @@
 {% extends 'base_content.html' %}
 {% block content %}
-<div class="container">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="text-start my-4" style="font-family: ourFontBold; color: #3B38BD;">Submit a Request</h1>
-      <form action="{% url 'requests' %}" method="post">
-        {% csrf_token %}
-        
-        <!-- Booking Selection -->
-        <div class="mb-3">
-          <label for="id_booking" class="form-label">{{ form.booking.label }}</label>
-          {{ form.booking }}
-          {% if form.booking.help_text %}
-          <small class="form-text text-muted">{{ form.booking.help_text }}</small>
-          {% endif %}
-        </div>
+<div class="w-100 d-flex flex-column">
+  <h1 class="mb-4">Requests</h1>
 
-        <!-- Request Type -->
-        <div class="mb-3">
-          <label for="id_request_type" class="form-label">{{ form.request_type.label }}</label>
-          {{ form.request_type }}
-          {% if form.request_type.help_text %}
-          <small class="form-text text-muted">{{ form.request_type.help_text }}</small>
-          {% endif %}
-        </div>
-
-        <!-- Additional Details -->
-        <div class="mb-3">
-          <label for="id_details" class="form-label">{{ form.details.label }}</label>
-          {{ form.details }}
-          {% if form.details.help_text %}
-          <small class="form-text text-muted">{{ form.details.help_text }}</small>
-          {% endif %}
-        </div>
-
-        <!-- Submit Button -->
-        <div class="text-end mt-4">
-          <button type="submit" class="btn btn-primary">Submit Request</button>
-        </div>
-      </form>
-    </div>
+  <!-- Tabs for Make a Request and View Requests -->
+  <div class="filter-labels">
+    <!-- Check if tab is make_request or if no tab is selected (default to make_request if empty) -->
+    <a href="?tab=make_request" class="filter-label {% if request.GET.tab == 'make_request' or not request.GET.tab %}active{% endif %}">
+        Make a Request
+    </a>
+    <a href="?tab=view_requests" class="filter-label {% if request.GET.tab == 'view_requests' %}active{% endif %}">
+        View Requests
+    </a>
   </div>
+
+  <hr class="filter-separator">
+
+  <!-- Display Make a Request Form or View Requests Table based on the selected tab -->
+  {% if request.GET.tab == 'make_request' or not request.GET.tab %}
+    <!-- Form for submitting a request (default behavior if no tab is selected) -->
+    <form method="POST">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">Submit Request</button>
+    </form>
+  {% elif request.GET.tab == 'view_requests' %}
+    <!-- Table of previous requests --> 
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Booking</th>
+            <th>Request Type</th>
+            <th>Frequency</th>
+            <th>Status</th>
+            <th>Date Submitted</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for request in requests %}
+          <tr>
+            <td>{{ request.booking }}</td>
+            <td>{{ request.request_type }}</td>
+            <td>{{ request.frequency }}</td>
+            <td>{% if request.status == 'Pending' %}Pending{% elif request.status == 'Approved' %}Approved{% else %}Rejected{% endif %}</td>
+            <td>{{ request.created_at }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">You have no previous requests.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}

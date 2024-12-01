@@ -62,11 +62,10 @@ def dashboard(request):
 
 @login_required
 def requests(request):
-    """Allow tutees to submit a request related to a booking."""
+    """Handle displaying the correct tab based on user input."""
     try:
         tutee = request.user.tutee_user  # Access the related Tutee object
     except Tutee.DoesNotExist:
-        # Handle the case where the user is not a tutee
         return render(request, 'error.html', {'message': 'You do not have a tutee profile.'})
     
     # Handle the form submission
@@ -74,14 +73,21 @@ def requests(request):
         form = RequestForm(tutee=tutee, data=request.POST)  # Pass tutee into form
         if form.is_valid():
             form.save()  # Calls the save method of the form to save the request
-            return redirect('requests')  # Redirect to the requests list page or confirmation page
+            return redirect('requests')  # Redirect to the requests page to see updated content
     else:
         form = RequestForm(tutee=tutee)  # Initialize the form for GET request
 
-    # Add bookings for the tutee to the form context (for dropdown options)
-    bookings = Booking.objects.filter(tutee=tutee)
+    # Fetch previous requests made by the tutee
+    requests = Request.objects.filter(tutee=tutee)
 
-    return render(request, 'requests.html', {'form': form, 'bookings': bookings})
+    # Handle the tab switching logic
+    tab = request.GET.get('tab', 'make_request')  # Default to 'make_request'
+
+    return render(request, 'requests.html', {
+        'form': form,
+        'requests': requests,
+        'tab': tab
+    })
 
 @login_required
 def invoices(request):
