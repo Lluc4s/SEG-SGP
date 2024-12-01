@@ -12,18 +12,24 @@ from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, RequestForm
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request
-import datetime
-from django.core.paginator import Paginator
 
 @login_required
 def tutors(request):
     """Display a list of tutors."""
+    if not request.user.is_staff:  # Check if the user is not staff
+        url = f"{reverse('dashboard')}?status="
+        return redirect(url)  # Redirect to dashboard with query parameters
+
     tutors_list = Tutor.objects.all()  # Retrieve all tutors from the database
     return render(request, 'tutors.html', {'tutors': tutors_list})
 
 @login_required
 def tutees(request):
     """Display a list of tutees."""
+    if not request.user.is_staff:  # Check if the user is not staff
+        url = f"{reverse('dashboard')}?status="
+        return redirect(url)  # Redirect to dashboard with query parameters
+
     tutees_list = Tutee.objects.all()  # Retrieve all Tutee objects
     return render(request, 'tutees.html', {'tutees': tutees_list})
 
@@ -33,40 +39,24 @@ def dashboard(request):
 
     current_user = request.user
 
-    filter_status = request.GET.get('filter', 'All')  # Default to 'All'
+    status_filter = request.GET.get('status')
 
     if current_user.is_staff:
         bookings = Booking.objects.all()
     elif current_user.is_tutor:
         # retrieve bookings where they are the tutor
-        tutor_user = Tutor.objects.get(user=current_user)
-        bookings = Booking.objects.filter(tutor=tutor_user)
-        # bookings = None
+        tutor = Tutor.objects.get(user=current_user)
+        bookings = Booking.objects.filter(tutor=tutor)
     else:
         # retrieve bookings where they are the tutee
-        tutee_user = Tutee.objects.get(user=current_user)
-        bookings = Booking.objects.filter(tutee=tutee_user)
-        # bookings = None
+        tutee = Tutee.objects.get(user=current_user)
+        bookings = Booking.objects.filter(tutee=tutee)
     
     # Apply filtering by status
-    if filter_status == 'Booked':
-        bookings = bookings.filter(status='Booked')
-    elif filter_status == 'Completed':
-        bookings = bookings.filter(status='Completed')
-    elif filter_status == 'Cancelled':
-        bookings = bookings.filter(status='Cancelled')
-
-    #if implemented need to add arrow button to get to the next page
-    #paginator = Paginator(bookings, 10)  # Show 10 bookings per page
-    #page_number = request.GET.get('page')
-    #page_obj = paginator.get_page(page_number)
-    
-    # Render the dashboard with filtered bookings
-    return render(request, 'dashboard.html', {
-        'user': current_user,
-        'bookings': bookings,
-        'filter_status': filter_status,  # Pass filter status to highlight active filter
-    })
+    if status_filter == 'Completed':
+        bookings = bookings.filter(is_completed=True)
+    elif status_filter == 'Booked':
+        bookings = bookings.filter(is_completed=False)
 
     return render(request, 'dashboard.html', {'user': current_user, 'bookings': bookings})
 
@@ -93,57 +83,39 @@ def requests(request):
 
     return render(request, 'requests.html', {'form': form, 'bookings': bookings})
 
-
-@login_prohibited
-def home(request):
-    """Display the application's start/home screen."""
-
-    return render(request, 'home.html')
-
+@login_required
 def invoices(request):
     current_user = request.user
-    invoices = []
+    status_filter = request.GET.get('status')  # Get the status filter from the query parameters
 
-    if current_user.is_tutor:
-        tutor_user = Tutor.objects.get(user=current_user)
-        bookings = Booking.objects.filter(tutor=tutor_user)
+    if current_user.is_staff:
+        bookings = Booking.objects.all()
+    elif current_user.is_tutor:
+        tutor = Tutor.objects.get(user = current_user)
+        bookings = Booking.objects.filter(tutor = tutor)
     else:
-        tutee_user = Tutee.objects.get(user=current_user)
-        bookings = Booking.objects.filter(tutee=tutee_user)
+        tutee = Tutee.objects.get(user = current_user)
+        bookings = Booking.objects.filter(tutee = tutee)
 
-
-    if request.method == 'POST':
-        booking_id = request.POST.get('invoice_id')  
-        new_status = request.POST.get('new_status')
-        booking = Booking.objects.get(id=booking_id)
-        if new_status == "Paid":
-            booking.is_paid = True
-        else:
-            booking.is_paid = False
-        booking.save()  
-        return redirect('invoices')  
-
+    total = {'remaining': 0, 'paid': 0}
     for booking in bookings:
-        if not booking.invoice_id:  # Generate invoice_id if missing
-            booking.invoice_id = f"INV-{uuid.uuid4().hex[:8].upper()}"
-            booking.save()
-
         if booking.is_paid:
-            status = "Paid"
+            total['paid'] += booking.price  # Add the price to 'paid' if booking is paid
         else:
-            status = "Due"
+            total['remaining'] += booking.price  # Add the price to 'remaining' if booking is not paid
 
-        invoices.append({
-            "id": booking.id, 
-            "number": booking.invoice_id,
-            "date": booking.date_time,
-            "status": status,
-            "description": booking.language,
-            "total": booking.price,
-        })
+    if status_filter == "Paid":  # If a status is provided, filter the bookings
+        bookings = bookings.filter(is_paid=True)
+    elif status_filter == "Pending":
+        bookings = bookings.filter(is_paid=False)
+    
+    if request.method == 'POST':
+        booking = Booking.objects.get(pk = request.POST.get("booking_id"))
+        booking.is_paid = not booking.is_paid
+        booking.save()
+        return redirect('invoices')
 
-    return render(request, 'invoices.html', {"invoices": invoices})
-   
+    return render(request, 'invoices.html', {"bookings": bookings, "total": total})
     
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
@@ -207,7 +179,7 @@ def log_out(request):
     """Log out the current user"""
 
     logout(request)
-    return redirect('log_in') # Replacing 'home' with 'log_in'
+    return redirect('')
 
 
 class PasswordView(LoginRequiredMixin, FormView):

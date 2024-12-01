@@ -74,13 +74,6 @@ class Tutee(models.Model):
     )
 
 class Booking(models.Model):
-    
-    STATUS_CHOICES = [
-        ("Booked", "Booked"),
-        ("Completed", "Completed"),
-        ("Cancelled", "Cancelled"),
-    ]
-
     date_time = models.DateTimeField()
     duration = models.CharField(max_length=20, choices=settings.DURATION_CHOICES)
     language = models.CharField(max_length=20, choices=settings.LANGUAGE_CHOICES)
@@ -94,13 +87,8 @@ class Booking(models.Model):
         on_delete=models.CASCADE,
         related_name="tutee_bookings"
     )
-    status = models.CharField(
-    max_length=10,
-    choices=STATUS_CHOICES,
-    default="",
-    )
-    is_paid = models.BooleanField(default=False)
-    invoice_id = models.CharField(max_length=50, unique=True, null=True, blank=True)  
+    is_completed = models.BooleanField(default=False)
+    is_paid = models.BooleanField(default=False) 
     price = models.DecimalField(
         max_digits=8,
         decimal_places=2,
@@ -115,11 +103,8 @@ class Booking(models.Model):
         if self.language not in self.tutor.get_languages_list():
             raise ValidationError("This tutor cannot teach the selected language. This tutor teaches " + self.tutor.languages_specialised)
 
-        if self.status == "":
-            raise ValidationError("Please select status")
-
-        if self.price < 0:
-            raise ValidationError("The price must be positive.")
+        if self.price <= 0:
+            raise ValidationError("The price must be positive & not zero.")
         
     def __str__(self):
         # Return a more informative string

@@ -1,68 +1,60 @@
 {% extends 'base_content.html' %}
 {% block content %}
-<div class="w-100">
-  <div class="row">
-    <div class="col-12">
-      <h1>Bookings</h1>
-      <div class="filter-labels mb-3">
-        <a href="?filter=All" class="filter-label {% if filter_status == 'All' %}active{% endif %}">
-            All
-        </a>
-        <a href="?filter=Booked" class="filter-label {% if filter_status == 'Booked' %}active{% endif %}">
-            Booked
-        </a>
-        <a href="?filter=Completed" class="filter-label {% if filter_status == 'Completed' %}active{% endif %}">
-            Completed
-        </a>
-        <a href="?filter=Cancelled" class="filter-label {% if filter_status == 'Cancelled' %}active{% endif %}">
-            Cancelled
-        </a>
-    </div>
-
-    <hr class="filter-separator">
-
-    
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Date & Time</th>
-            <th>Duration</th>
-            <th>Language</th>
-            {% if user.is_staff %}
-              <th>Tutor</th>
-              <th>Tutee</th>
-            {% elif user.is_tutor%}
-              <th>Tutee</th>
-            {% else %}
-              <th>Tutor</th>
-            {% endif %}
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for booking in bookings %}
-          <tr>
-            <td>{{ booking.date_time }}</td>
-            <td>{{ booking.duration }}</td>
-            <td>{{ booking.language }}</td>
-            {% if user.is_staff %}
-              <td>{{ booking.tutor.user.first_name }}</td>
-              <td>{{ booking.tutee.user.first_name }}</td>
-            {% elif user.is_tutor%}
-              <td>{{ booking.tutee.user.first_name }}</td>
-            {% else %}
-              <td>{{ booking.tutor.user.first_name }}</td>
-            {% endif %}
-            <td> {{ booking.status }} </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="7">No bookings available.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+<div class="w-100 d-flex flex-column">
+  <h1 class="mb-4">Bookings</h1>
+  <div class="filter-labels">
+    <a href="?status=" class="filter-label {% if request.GET.status == '' %}active{% endif %}">
+        All
+    </a>
+    <a href="?status=Booked" class="filter-label {% if request.GET.status == 'Booked' %}active{% endif %}">
+        Booked
+    </a>
+    <a href="?status=Completed" class="filter-label {% if request.GET.status == 'Completed' %}active{% endif %}">
+        Completed
+    </a>
+  </div>
+  <hr class="filter-separator">
+  <div>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>Duration</th>
+          <th>Language</th>
+          {% if user.is_staff %}
+            <th>Tutor</th>
+            <th>Tutee</th>
+          {% elif user.is_tutor%}
+            <th>Tutee</th>
+          {% else %}
+            <th>Tutor</th>
+          {% endif %}
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for booking in bookings %}
+        <tr>
+          <td>{{ booking.date_time }}</td>
+          <td>{{ booking.duration }}</td>
+          <td>{{ booking.language }}</td>
+          {% if user.is_staff %}
+            <td>{{ booking.tutor.user.first_name }}</td>
+            <td>{{ booking.tutee.user.first_name }}</td>
+          {% elif user.is_tutor%}
+            <td>{{ booking.tutee.user.first_name }}</td>
+          {% else %}
+            <td>{{ booking.tutor.user.first_name }}</td>
+          {% endif %}
+          <td>{% if booking.is_completed %}<div class="bg-success text-white d-inline-block px-3 rounded-pill">Completed</div>{% else %}<div class="bg-warning d-inline-block px-3 rounded-pill">Booked</div>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">No bookings available.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}

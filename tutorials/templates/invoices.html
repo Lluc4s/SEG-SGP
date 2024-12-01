@@ -1,60 +1,113 @@
 {% extends 'base_content.html' %}
 {% block content %}
-    <dev class="w-100">
-      <dev class="row">
-        <div class="col-12">
-          <h1>Invoices</h1>
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <th>Invoice #</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Descreption</th>
-                <th>Total</th>
-                {% if user.is_tutor %}
-                  <th>Action</th>
-                {% endif %}
-                </tr>
-                </thead>
-                <tbody>
-                  {% for invoice in invoices %}
+  <div class="w-100 d-flex flex-column">
+    <h1 class="mb-4">Invoices</h1>
+    {% if not user.is_staff %}
+    <div class="card mb-4 text-center">
+      <div class="card-header">
+        Total
+      </div>
+      <div class="card-body text-center">
+        <h5 class="card-title">Paid Amount:</h5>
+        <p class="card-text">{{ total.paid }}</p>
+        <h5 class="card-title">Remaining Amount:</h5>
+        <p class="card-text">{{ total.remaining }}</p>
+        {% if not user.is_tutor %}
+        <button type="button" class="btn btn-secondary rounded-pill w-25" data-bs-toggle="modal" data-bs-target="#payModal">
+          Pay
+        </button>
+        {% endif %}
+
+        <!-- Modal -->
+        <div class="modal fade" id="payModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Bank Details</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>Account Number: 12345678</p>
+                <p>Sort Code: 12-34-56</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary">Send Proof</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="filter-labels">
+      <a href="?status=" class="filter-label {% if request.GET.status == '' %}active{% endif %}">
+          All
+      </a>
+      <a href="?status=Pending" class="filter-label {% if request.GET.status == 'Pending' %}active{% endif %}">
+          Pending
+      </a>
+      <a href="?status=Paid" class="filter-label {% if request.GET.status == 'Paid' %}active{% endif %}">
+          Paid
+      </a>
+    </div>
+    <hr class="filter-separator">
+    <div>
+      <table class="table table-striped">
+        <thead>
           <tr>
-            <td>{{ invoice.number }}</td>
-            <td>{{ invoice.date }}</td>
-            <td>
-              {% if invoice.status == "Paid" %}
-              <span class="badge bg-success">Paid</span>
-              {% elif invoice.status == "Due" %}
-              <span class="badge bg-warning text-dark">Due</span>
-              {% endif %}
-            </td>
-            <td>{{ invoice.description }}</td>
-            <td>${{ invoice.total }}</td>
-            {% if user.is_tutor %}
+            <th>Date & Time</th>
+            <th>Duration</th>
+            <th>Language</th>
+            {% if user.is_staff %}
+              <th>Tutor</th>
+              <th>Tutee</th>
+            {% elif user.is_tutor%}
+              <th>Tutee</th>
+            {% else %}
+              <th>Tutor</th>
+            {% endif %}
+            <th>Price</th>
+            <th>Status</th>
+            {% if user.is_staff %}
+              <th>Action</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for booking in bookings %}
+          <tr>
+            <td>{{ booking.date_time }}</td>
+            <td>{{ booking.duration }}</td>
+            <td>{{ booking.language }}</td>
+            {% if user.is_staff %}
+              <td>{{ booking.tutor.user.first_name }}</td>
+              <td>{{ booking.tutee.user.first_name }}</td>
+            {% elif user.is_tutor%}
+              <td>{{ booking.tutee.user.first_name }}</td>
+            {% else %}
+              <td>{{ booking.tutor.user.first_name }}</td>
+            {% endif %}
+            <td> {{ booking.price }} </td>
+            <td>{% if booking.is_paid %}<div class="bg-success text-white d-inline-block px-3 rounded-pill">Paid</div>{% else %}<div class="bg-warning d-inline-block px-3 rounded-pill">Pending</div>{% endif %}</td>
+            {% if user.is_staff %}
               <td>
-                <form method="POST" style="display: inline;">
+                <form method="POST">
                   {% csrf_token %}
-                  <input type="hidden" name="invoice_id" value="{{ invoice.id }}">
-                  {% if invoice.status == "Due" %}
-                  <input type="hidden" name="new_status" value="Paid">
-                  <button type="submit" class="btn btn-success">Mark as Paid</button>
-                  {% elif invoice.status == "Paid" %}
-                  <input type="hidden" name="new_status" value="Due">
-                  <button type="submit" class="btn btn-warning">Mark as Due</button>
-                  {% endif %}
+                  <input type="hidden" name="booking_id" value="{{ booking.pk }}">
+                  <button type="submit" class="btn btn-secondary py-0 d-inline-block rounded-pill">
+                      Change Status
+                  </button>
                 </form>
               </td>
             {% endif %}
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7">No Invoices available.</td>
+            <td colspan="8">No invoices available.</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
-</div>
 {% endblock %}

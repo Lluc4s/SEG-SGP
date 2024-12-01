@@ -37,10 +37,10 @@ class BookingAdmin(admin.ModelAdmin):
     """Admin configuration for the Booking model."""
     
     # Fields to display in the admin list view
-    list_display = ('date_time', 'duration', 'language', 'tutor', 'tutee', 'status')
+    list_display = ('date_time', 'duration', 'language', 'tutor', 'tutee', 'is_completed', 'price')
     
     # Fields to filter by in the admin
-    list_filter = ('status', 'language', 'tutor', 'tutee', 'date_time')
+    list_filter = ('language', 'tutor', 'tutee', 'date_time')
     
     # Fields to search for in the admin
     search_fields = ('tutor__username', 'tutee__username', 'language')
@@ -50,7 +50,7 @@ class BookingAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('date_time', 'duration', 'language', 'tutor', 'tutee', 'status'),
+            'fields': ('date_time', 'duration', 'language', 'tutor', 'tutee', 'price'),
         }),
     )
 
