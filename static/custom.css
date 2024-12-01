@@ -227,7 +227,7 @@ body {
 }
 
 /* Making button/input area fancier by adding hover functionality */
-.btn:hover,
+.btn-primary:hover,
 .login-form input:hover {
   background-color: var(--light-purple) !important;
   color: var(--dark-purple); /* Inverting colours */
@@ -235,11 +235,23 @@ body {
   transition: 1000ms;
 }
 
-.btn {
+.btn-primary {
   background-color: var(--dark-purple) !important;
   width: 100%;
   border-radius: 20px !important;
   font-size: 15px;
+}
+
+.btn-secondary {
+  background-color: var(--dark-purple);
+  color: white;
+  text-align: center;
+}
+
+.btn-secondary:hover {
+  background-color: var(--light-purple) !important;
+  color: var(--dark-purple);
+  text-align: center;
 }
 
 .divider { 
@@ -327,5 +339,4 @@ body {
 .filter-separator {
   border: none; /* Remove default border */
   border-top: 1px solid #aaaaaa; /* Add a light gray horizontal line */
-  margin: 5px 0; /* Add spacing around the line */
 }
