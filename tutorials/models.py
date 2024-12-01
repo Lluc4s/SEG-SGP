@@ -24,7 +24,6 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, blank=False)
     is_tutor = models.BooleanField('tutor status', default=False)
 
-
     class Meta:
         """Model options."""
 
@@ -66,6 +65,9 @@ class Tutor(models.Model):
             return [lang.strip() for lang in self.languages_specialised.split(',')]
         return []
 
+    def __str__(self):
+        return self.user.username
+
 class Tutee(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -73,9 +75,15 @@ class Tutee(models.Model):
         related_name="tutee_user"
     )
 
+    def __str__(self):
+        return self.user.username
+
 class Booking(models.Model):
+
     date_time = models.DateTimeField()
-    duration = models.CharField(max_length=20, choices=settings.DURATION_CHOICES)
+    duration = models.DurationField(
+        choices = settings.DURATION_CHOICES,
+    )
     language = models.CharField(max_length=20, choices=settings.LANGUAGE_CHOICES)
     tutor = models.ForeignKey(
         Tutor,
@@ -97,18 +105,17 @@ class Booking(models.Model):
 
     class Meta:
         ordering = ["date_time"]
-
-    def clean(self):
-        # Enforce languages are matched
-        if self.language not in self.tutor.get_languages_list():
-            raise ValidationError("This tutor cannot teach the selected language. This tutor teaches " + self.tutor.languages_specialised)
-
-        if self.price <= 0:
-            raise ValidationError("The price must be positive & not zero.")
         
     def __str__(self):
-        # Return a more informative string
-        return f"{self.date_time.strftime('%Y-%m-%d %H:%M')} : {self.language} with {self.tutor.user.full_name()}"
+        # Calculate the end time based on the duration
+        end_time = self.date_time + self.duration
+
+        # Format both start and end times
+        start_date_time_str = self.date_time.strftime("%m/%d/%Y %I:%M %p")
+        end_time_str = end_time.strftime("%I:%M %p")
+
+        # Return the formatted string
+        return f"{start_date_time_str} - {end_time_str} : {self.language} with {self.tutor.user.full_name()}"
 
 class Request(models.Model):
     REQUEST_CHOICES = [

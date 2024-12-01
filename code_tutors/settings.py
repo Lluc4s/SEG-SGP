@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from django.contrib.messages import constants as messages
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -133,7 +134,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'tutorials.User'
 
 # Login URL for redirecting users from login protected views
-LOGIN_URL = ''
+LOGIN_URL = '/'
 
 # URL where @login_prohibited redirects to
 REDIRECT_URL_WHEN_LOGGED_IN = 'dashboard'
@@ -153,10 +154,11 @@ LANGUAGE_CHOICES = [
     ('SQL', 'SQL'),
 ]
 
-# Available durations
+# # Available durations
 DURATION_CHOICES = [
-    ('30 mins', '30 mins'),
-    ('1 hr', '1 hr'),
-    ('1 hr 30 mins', '1 hr 30 mins'),
-    ('2 hrs', '2 hrs')
+        (timedelta(minutes=30), "30 min"),   # 30 minutes
+        (timedelta(minutes=90), "1 hour 30 min"),  # 1 hour 30 minutes
+        (timedelta(minutes=120), "2 hour"), # 2 hours
+        (timedelta(minutes=150), "2 hour 30 min"), # 2 hours 30 minutes
+        (timedelta(minutes=180), "3 hour"), # 3 hours
 ]
