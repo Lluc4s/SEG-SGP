@@ -1,7 +1,14 @@
 {% extends 'base_content.html' %}
 {% block content %}
 <div class="w-100 d-flex flex-column">
-  <h1 class="mb-4">Bookings</h1>
+  <div class="w-100 mb-4 d-flex justify-content-between align-items-center">
+    <h1>Bookings</h1>
+
+    <a type="button" class="btn btn-secondary d-inline-block px-3 rounded-pill" href="/new_booking">
+      <i class="bi bi-plus-circle me-2"></i>
+      New Booking
+    </a>
+  </div>
   <div class="filter-labels">
     <a href="?status=" class="filter-label {% if request.GET.status == '' %}active{% endif %}">
         All
@@ -35,7 +42,8 @@
       <tbody>
         {% for booking in bookings %}
         <tr>
-          <td>{{ booking.date_time }}</td>
+          {% load tz %}
+          <td>{{ booking.date_time|localtime|date:"m/d/Y g:i a" }}</td>
           <td>{{ booking.duration }}</td>
           <td>{{ booking.language }}</td>
           {% if user.is_staff %}

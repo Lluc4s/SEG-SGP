@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
 from .models import User, Tutor, Tutee, Request, Booking
 from django.conf import settings
+from datetime import datetime
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -117,10 +118,9 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
 
         # If the user is a tutor and no languages are selected, raise a validation error
         if is_tutor and not languages_specialised:
-            raise forms.ValidationError("Please select one or more languages if you are a tutor.")
+            self.add_error("", "Please select one or more languages if you are a tutor.")
 
         return languages_specialised
-
 
     def save(self):
         """Create a new user."""
@@ -145,6 +145,91 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
 
 
         return user
+
+class NewBookingForm(forms.ModelForm):
+    """
+    Form enabling admins to create a new booking.
+    """
+    
+    class Meta:
+        model = Booking
+        fields = [
+            "date_time",
+            "duration",
+            "language",
+            "tutor",
+            "tutee",
+            "price",
+        ]
+        widgets = {
+            "date_time": forms.DateTimeInput(
+                attrs={
+                    "type": "datetime-local",
+                    "class": "form-control",
+                    "step": "1800",  # 30 minutes = 1800 seconds
+                }
+            ),
+            "duration": forms.Select(attrs={"class": "form-control"}),
+            "language": forms.Select(attrs={"class": "form-control"}),
+            "tutor": forms.Select(attrs={"class": "form-control"}),
+            "tutee": forms.Select(attrs={"class": "form-control"}),
+            "price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["date_time"].widget.attrs["min"] = datetime.now().strftime("%Y-%m-%dT%H:%M")
+
+    def clean(self):
+        """
+        Override the clean method to add form-specific validation.
+        """
+        cleaned_data = super().clean()
+        language = cleaned_data.get("language")
+        tutor = cleaned_data.get("tutor")
+        price = cleaned_data.get("price")
+        date_time = cleaned_data.get("date_time")
+        duration = cleaned_data.get("duration")
+
+        # Calculate the end time of the current booking
+        end_time = date_time + duration
+
+        if tutor and language and language not in tutor.get_languages_list():
+            self.add_error(
+                "language", f"This tutor cannot teach the selected language. This tutor teaches {tutor.languages_specialised}."
+            )
+
+        if price is None or price <= 0:
+            self.add_error("price", "The price must be positive.")
+
+        # Check for overlapping bookings for the same tutor
+        overlapping_bookings = Booking.objects.filter(
+            tutor=tutor,
+            date_time__lt=end_time,  # Other bookings that start before this one ends
+            date_time__gte=date_time  # Other bookings that end after this one starts
+        ).exclude(pk=self.instance.pk)  # Exclude the current booking in case of updates
+
+        if overlapping_bookings.exists():
+            for overlapping_booking in overlapping_bookings:
+                self.add_error("date_time", f"This date&time overlaps with another booking for {overlapping_booking}.")
+                self.add_error("duration", f"This duration overlaps with another booking for {overlapping_booking}.")
+
+        return cleaned_data
+    
+    def save(self):
+        """Create a new booking."""
+
+        super().save(commit=False)
+        booking = Booking.objects.create(
+            date_time=self.cleaned_data.get('date_time'),
+            duration=self.cleaned_data.get('duration'),
+            language=self.cleaned_data.get('language'),
+            tutor=self.cleaned_data.get('tutor'),
+            tutee=self.cleaned_data.get('tutee'),
+            price=self.cleaned_data.get('price')
+        )
+
+        return booking
 
 class RequestForm(forms.ModelForm):
     """Form enabling tutees to submit a request related to a booking."""

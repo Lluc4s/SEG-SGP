@@ -23,7 +23,8 @@ from tutorials import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.LogInView.as_view(), name=''),
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+    path('new_booking', views.NewBookingView.as_view(), name='new_booking'),
     path('log_out/', views.log_out, name='log_out'),
     path('password/', views.PasswordView.as_view(), name='password'),
     path('profile/', views.ProfileUpdateView.as_view(), name='profile'),

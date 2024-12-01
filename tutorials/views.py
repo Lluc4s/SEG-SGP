@@ -1,4 +1,3 @@
-import uuid
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -7,9 +6,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
+from django.views.generic import TemplateView
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, RequestForm
+from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, RequestForm, NewBookingForm
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request
 
@@ -33,32 +33,53 @@ def tutees(request):
     tutees_list = Tutee.objects.all()  # Retrieve all Tutee objects
     return render(request, 'tutees.html', {'tutees': tutees_list})
 
-@login_required
-def dashboard(request):
-    """Display the current user's dashboard."""
+class NewBookingView(LoginRequiredMixin, FormView):
+    """Display the new booking screen & handle create booking."""
 
-    current_user = request.user
+    form_class = NewBookingForm
+    template_name = "new_booking.html"
 
-    status_filter = request.GET.get('status')
+    def form_valid(self, form):
+        # Save the booking instance
+        self.object = form.save()
+        messages.success(self.request, "Booking successfully created!")
 
-    if current_user.is_staff:
-        bookings = Booking.objects.all()
-    elif current_user.is_tutor:
-        # retrieve bookings where they are the tutor
-        tutor = Tutor.objects.get(user=current_user)
-        bookings = Booking.objects.filter(tutor=tutor)
-    else:
-        # retrieve bookings where they are the tutee
-        tutee = Tutee.objects.get(user=current_user)
-        bookings = Booking.objects.filter(tutee=tutee)
-    
-    # Apply filtering by status
-    if status_filter == 'Completed':
-        bookings = bookings.filter(is_completed=True)
-    elif status_filter == 'Booked':
-        bookings = bookings.filter(is_completed=False)
+        return redirect(self.get_success_url())
 
-    return render(request, 'dashboard.html', {'user': current_user, 'bookings': bookings})
+    def get_success_url(self):
+        url = f"{reverse('dashboard')}?status="
+        return url
+
+class DashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        """Add context data for GET requests."""
+        context = super().get_context_data(**kwargs)
+        current_user = self.request.user
+        status_filter = self.request.GET.get('status')
+        form = NewBookingForm()
+
+        # Retrieve bookings based on user type
+        if current_user.is_staff:
+            bookings = Booking.objects.all()
+        elif current_user.is_tutor:
+            tutor = get_object_or_404(Tutor, user=current_user)
+            bookings = Booking.objects.filter(tutor=tutor)
+        else:
+            tutee = get_object_or_404(Tutee, user=current_user)
+            bookings = Booking.objects.filter(tutee=tutee)
+
+        # Apply status filter
+        if status_filter == 'Completed':
+            bookings = bookings.filter(is_completed=True)
+        elif status_filter == 'Booked':
+            bookings = bookings.filter(is_completed=False)
+
+        # Add context variables
+        context['user'] = current_user
+        context['bookings'] = bookings
+        return context
 
 @login_required
 def requests(request):
