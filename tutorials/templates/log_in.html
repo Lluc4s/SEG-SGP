@@ -12,7 +12,7 @@
         <div class="mt-3">
           {% include 'partials/messages.html' %}
         </div>
-        <form action="{% url 'log_in' %}" method="post" class="login-form">
+        <form method="post" class="login-form">
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ next }}">
           {% include 'partials/bootstrap_form.html' with form=form %}
@@ -20,7 +20,7 @@
           <div class="divider"> <!-- Divider to separate log in and sign up buttons-->
             <span>or</span> 
           </div>
-          <a href='{% url 'sign_up' %}' class="btn btn-lg btn-secondary mt-3"> <!-- New sign up button -->
+          <a href='{% url 'sign_up' %}' class="btn btn-lg btn-primary mt-3"> <!-- New sign up button -->
             Sign up
           </a>
         </form>
