@@ -1,22 +1,8 @@
 {% load widget_tweaks %}
 {% for field in form %}
-  <div class="row mb-3">
-    
+  <div class="w-100 mb-3">
     {% if field.name == "languages_specialised" %}
-      <div id="language-field">
-        {{ field.label_tag }}
-        {% if form.is_bound %}
-          {% if field.errors %}
-            {% render_field field class="is-invalid" %}
-          {% else %}
-            {% render_field field class="is-valid" %}
-          {% endif %}
-        {% else %}
-          {% render_field field %}
-        {% endif %}
-      </div>
-    {% else %}
-      <!-- Default rendering for other fields -->
+      <!-- No form-control for languages specialised checkbox -->
       {{ field.label_tag }}
       {% if form.is_bound %}
         {% if field.errors %}
@@ -26,6 +12,18 @@
         {% endif %}
       {% else %}
         {% render_field field %}
+      {% endif %}
+    {% else %}
+      <!-- Default rendering for other fields -->
+      {{ field.label_tag }}
+      {% if form.is_bound %}
+        {% if field.errors %}
+          {% render_field field class="is-invalid form-control" %}
+        {% else %}
+          {% render_field field class="is-valid form-control" %}
+        {% endif %}
+      {% else %}
+        {% render_field field class="form-control"%}
       {% endif %}
     {% endif %}
     <div class="valid-feedback">
