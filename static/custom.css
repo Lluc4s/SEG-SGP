@@ -220,10 +220,19 @@ body {
 .login-form input, 
 .login-form textarea, 
 .login-form select {
+  color: var(--dark-purple) !important;
   background-color: var(--light-purple);  /* Light grey background */
   border: 1px solid var(--dark-purple);     /* Light border */
   padding: 10px;
   border-radius: 5px;
+}
+
+.login-form input[type="submit"] {
+  color: white !important;
+}
+
+.login-form input[type="submit"]:hover {
+  color: var(--dark-purple) !important; /* Change text color on hover */
 }
 
 /* Making button/input area fancier by adding hover functionality */
