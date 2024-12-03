@@ -1,14 +1,27 @@
 {% extends 'base.html' %}
 {% block body %}
-<div class="container-fluid vh-100">
-  <div class="row h-100">
+<div class="container-fluid vh-100 px-0">
+  <div class="d-flex flex-row h-100">
     <!-- Left side for the image -->
-    <div class="col-md-6 p-0 image-container"></div>
+    <div class="w-100 p-0 image-container d-none d-lg-block">
+      <div class="text-container">
+        <h1 class="mb-3">Welcome to Code Tutors</h1>
+        <p>Turn your coding dreams into reality! Learn from experienced tutors, gain practical skills, and become part of a supportive community dedicated to helping you succeed in your coding journey.</p>
+        <p>Our platform connects you with highly qualified tutors specializing in a wide range of programming languages and frameworks, including Python, JavaScript, Java, C++, and more. With personalized one-on-one sessions, hands-on projects, and tailored learning paths, Code Tutors ensures you achieve your goals faster and more effectively.</p>
+        <p>Join a community of passionate learners and skilled tutors dedicated to helping you succeed in the ever-evolving tech industry. At Code Tutors, we believe that with the right guidance and resources, anyone can code!</p>
+      </div>
+    </div>
 
     <!-- Right side for the login form -->
-    <div class="col-md-6 d-flex justify-content-center align-items-center">
+    <div class="w-100 d-flex flex-column justify-content-center align-items-center">
       <div class="login-form-wrapper">
-        <h1>Login</h1>
+        <div class="d-flex justify-content-center">
+          <h1 class="p-4 mb-5 border border-dark border-5 rounded-pill">
+            <i class="bi bi-code-slash me-3"></i>
+            Code Tutors
+          </h1>
+        </div>
+        <h1 class="mt-5">Login</h1>
         <div class="mt-3">
           {% include 'partials/messages.html' %}
         </div>
@@ -20,10 +33,17 @@
           <div class="divider"> <!-- Divider to separate log in and sign up buttons-->
             <span>or</span> 
           </div>
-          <a href='{% url 'sign_up' %}' class="btn btn-lg btn-primary mt-3"> <!-- New sign up button -->
-            Sign up
-          </a>
+          
         </form>
+        <h5 class="w-100 text-center mt-3">Don't have an account? Sign Up!</h5>
+        <div class="d-flex flex-row justify-content-center">
+          <a href='{% url 'tutee_sign_up' %}' class="btn btn-lg btn-primary mt-3 w-25 me-5">
+            I am tutee
+          </a>
+          <a href='{% url 'tutor_sign_up' %}' class="btn btn-lg btn-primary mt-3 w-25">
+            I am tutor
+          </a>
+        </div>
       </div> 
       <footer class="footer">
         <span class="default-text">Created by Team Jackal</span>

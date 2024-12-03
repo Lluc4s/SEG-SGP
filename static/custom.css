@@ -213,7 +213,20 @@ body {
   background-image: url("images/login.jpg");
   background-size: cover;
   background-position: center;
+  position: relative;
   height: 100vh;  /* Ensures the div takes up the full viewport height */
+}
+
+.image-container .text-container {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  text-align: left;
+  color: white;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  border-radius: 8px;
 }
 
 /* Styling only the input fields in the login form */

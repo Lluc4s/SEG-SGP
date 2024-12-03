@@ -9,8 +9,8 @@ from datetime import datetime
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
 
-    username = forms.CharField(label="Username")
-    password = forms.CharField(label="Password", widget=forms.PasswordInput())
+    username = forms.CharField(label="Username", widget=forms.TextInput(attrs={'placeholder': 'Enter your username...'}))
+    password = forms.CharField(label="Password", widget=forms.PasswordInput(attrs={'placeholder': 'Enter your password...'}))
 
     def get_user(self):
         """Returns authenticated user if possible."""
@@ -88,42 +88,17 @@ class PasswordForm(NewPasswordMixin):
             self.user.save()
         return self.user
 
-class SignUpForm(NewPasswordMixin, forms.ModelForm):
-    """Form enabling unregistered users to sign up."""
-
-    is_tutor = forms.BooleanField(
-        required=False,
-        widget=forms.RadioSelect(choices=[(True, "Tutor"), (False, "Tutee")]),
-        initial=False,
-        label="I am:",
-    )
-
-    languages_specialised = forms.MultipleChoiceField(
-        required=False,  # Will be validated only if is_tutor=True
-        choices=settings.LANGUAGE_CHOICES,
-        widget=forms.CheckboxSelectMultiple(),  # Initially hidden
-        label="Languages Specialised",
-    )
+class TuteeSignUpForm(NewPasswordMixin, forms.ModelForm):
+    """Form enabling unregistered users to sign up as tutee."""
 
     class Meta:
         """Form options."""
 
         model = User
-        fields = ['is_tutor', 'languages_specialised', 'first_name', 'last_name', 'username', 'email']
-
-    def clean_languages_specialised(self):
-        """Custom validation for the 'languages_specialised' field."""
-        is_tutor = self.cleaned_data.get('is_tutor')
-        languages_specialised = self.cleaned_data.get('languages_specialised', [])
-
-        # If the user is a tutor and no languages are selected, raise a validation error
-        if is_tutor and not languages_specialised:
-            self.add_error("", "Please select one or more languages if you are a tutor.")
-
-        return languages_specialised
+        fields = ['first_name', 'last_name', 'username', 'email']
 
     def save(self):
-        """Create a new user."""
+        """Create a new user as tutee."""
 
         super().save(commit=False)
         user = User.objects.create_user(
@@ -132,17 +107,47 @@ class SignUpForm(NewPasswordMixin, forms.ModelForm):
             last_name=self.cleaned_data.get('last_name'),
             email=self.cleaned_data.get('email'),
             password=self.cleaned_data.get('new_password'),
-            is_tutor=self.cleaned_data.get('is_tutor')
+            is_tutor=False
         )
+        Tutee.objects.create(user=user)
 
-        if self.cleaned_data.get('is_tutor'):
-            Tutor.objects.create(
-                user=user,
-                languages_specialised=", ".join(self.cleaned_data.get('languages_specialised'))  # Convert list to a string
-            )
-        else:
-            Tutee.objects.create(user=user)
+        return user
 
+class TutorSignUpForm(NewPasswordMixin, forms.ModelForm):
+    """Form enabling unregistered users to sign up as tutor."""
+
+    languages_specialised = forms.MultipleChoiceField(
+        required=True,
+        error_messages={
+            'required': 'Please select one or more languages you are specialised.',
+        },
+        choices=settings.LANGUAGE_CHOICES,
+        widget=forms.CheckboxSelectMultiple(),
+        label="Languages Specialised",
+    )
+
+    class Meta:
+        """Form options."""
+
+        model = User
+        fields = ['languages_specialised', 'first_name', 'last_name', 'username', 'email']
+
+    def save(self):
+        """Create a new user as tutor."""
+
+        super().save(commit=False)
+        user = User.objects.create_user(
+            self.cleaned_data.get('username'),
+            first_name=self.cleaned_data.get('first_name'),
+            last_name=self.cleaned_data.get('last_name'),
+            email=self.cleaned_data.get('email'),
+            password=self.cleaned_data.get('new_password'),
+            is_tutor=True
+        )
+        Tutor.objects.create(
+            user=user,
+            languages_specialised=", ".join(self.cleaned_data.get('languages_specialised'))  # Convert list to a string
+        )
 
         return user
 

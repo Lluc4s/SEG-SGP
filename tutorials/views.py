@@ -9,7 +9,7 @@ from django.views import View
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, SignUpForm, RequestForm, NewBookingForm
+from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, TutorSignUpForm, RequestForm, NewBookingForm
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request
 
@@ -254,10 +254,25 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
 
 
-class SignUpView(LoginProhibitedMixin, FormView):
+class TuteeSignUpView(LoginProhibitedMixin, FormView):
     """Display the sign up screen and handle sign ups."""
 
-    form_class = SignUpForm
+    form_class = TuteeSignUpForm
+    template_name = "sign_up.html"
+    redirect_when_logged_in_url = settings.REDIRECT_URL_WHEN_LOGGED_IN
+
+    def form_valid(self, form):
+        self.object = form.save()
+        login(self.request, self.object)
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+
+class TutorSignUpView(LoginProhibitedMixin, FormView):
+    """Display the sign up screen and handle sign ups."""
+
+    form_class = TutorSignUpForm
     template_name = "sign_up.html"
     redirect_when_logged_in_url = settings.REDIRECT_URL_WHEN_LOGGED_IN
 
