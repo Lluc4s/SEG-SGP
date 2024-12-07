@@ -12,6 +12,7 @@ from django.urls import reverse
 from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, TutorSignUpForm, RequestForm, NewBookingForm
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request
+from django.http import HttpResponse
 
 @login_required
 def tutors(request):
@@ -109,6 +110,44 @@ def requests(request):
         'requests': requests,
         'tab': tab
     })
+
+from django.shortcuts import render
+from .models import Request
+
+@login_required
+def view_requests(request):
+    """Handle displaying all requests for the admin."""
+    # Check if the user is an admin
+    if not request.user.is_staff:
+        return render(request, 'error.html', {'message': 'You do not have permission to view this page.'})
+    
+    # Fetch all requests for the admin
+    requests = Request.objects.all()
+
+    return render(request, 'view_requests.html', {
+        'requests': requests
+    })
+
+@login_required
+def change_request_status(request, request_id):
+    # Ensure only admin users can access this functionality
+    if not request.user.is_staff:
+        return HttpResponse('Unauthorized', status=403)
+
+    # Fetch the specific request
+    req = get_object_or_404(Request, id=request_id)
+
+    if request.method == 'POST':
+        # Get the new status from the form submission
+        new_status = request.POST.get('status')
+
+        # Validate the new status and update the request
+        if new_status in ['Pending', 'Approved', 'Rejected']:
+            req.status = new_status
+            req.save()
+
+    # Redirect back to the requests page
+    return redirect('view_requests')  # Replace 'view_requests' with your admin request page name
 
 @login_required
 def invoices(request):

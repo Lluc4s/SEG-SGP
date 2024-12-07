@@ -5,7 +5,6 @@
 
   <!-- Tabs for Make a Request and View Requests -->
   <div class="filter-labels">
-    <!-- Check if tab is make_request or if no tab is selected (default to make_request if empty) -->
     <a href="?tab=make_request" class="filter-label {% if request.GET.tab == 'make_request' or not request.GET.tab %}active{% endif %}">
         Make a Request
     </a>
@@ -25,35 +24,80 @@
       <button type="submit" class="btn btn-primary">Submit Request</button>
     </form>
   {% elif request.GET.tab == 'view_requests' %}
-    <!-- Table of previous requests --> 
-    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Booking</th>
-            <th>Request Type</th>
-            <th>Frequency</th>
-            <th>Status</th>
-            <th>Date Submitted</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for request in requests %}
-          <tr>
-            <td>{{ request.booking }}</td>
-            <td>{{ request.request_type }}</td>
-            <td>{{ request.frequency }}</td>
-            <td>{% if request.status == 'Pending' %}Pending{% elif request.status == 'Approved' %}Approved{% else %}Rejected{% endif %}</td>
-            <td>{{ request.created_at }}</td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5">You have no previous requests.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <!-- Check if the user is an admin or a tutee -->
+    {% if user.is_staff %}
+      <!-- Table of all requests for admins -->
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Tutee</th>
+              <th>Booking</th>
+              <th>Request Type</th>
+              <th>Frequency</th>
+              <th>Status</th>
+              <th>Date Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for request in requests %}
+            <tr>
+              <td>{{ request.tutee.user.first_name }} {{ request.tutee.user.last_name }}</td>
+              <td>{{ request.booking }}</td>
+              <td>{{ request.request_type }}</td>
+              <td>{{ request.frequency }}</td>
+              <td>
+                {% if request.status == 'Pending' %}Pending
+                {% elif request.status == 'Approved' %}Approved
+                {% else %}Rejected
+                {% endif %}
+              </td>
+              <td>{{ request.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6">No requests available.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <!-- Table of only the tutee's requests -->
+      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Booking</th>
+              <th>Request Type</th>
+              <th>Frequency</th>
+              <th>Status</th>
+              <th>Date Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for request in requests %}
+            <tr>
+              <td>{{ request.booking }}</td>
+              <td>{{ request.request_type }}</td>
+              <td>{{ request.frequency }}</td>
+              <td>
+                {% if request.status == 'Pending' %}Pending
+                {% elif request.status == 'Approved' %}Approved
+                {% else %}Rejected
+                {% endif %}
+              </td>
+              <td>{{ request.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5">You have no previous requests.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
   {% endif %}
 </div>
 {% endblock %}

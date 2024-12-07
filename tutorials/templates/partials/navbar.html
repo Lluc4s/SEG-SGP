@@ -26,6 +26,12 @@
           Tutors
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link {% if request.path == '/view_requests/' %}active{% endif %}" href="{% url 'view_requests' %}">
+          <i class="bi bi-pencil-square me-2"></i>
+          Requests
+        </a>
+      </li>
     {% elif not user.is_tutor %}
       <li class="nav-item">
         <a class="nav-link {% if request.path == '/requests/' %}active{% endif %}" href="/requests">
