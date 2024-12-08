@@ -76,7 +76,8 @@
         <tbody>
           {% for booking in bookings %}
           <tr>
-            <td>{{ booking.date_time }}</td>
+            {% load tz %}
+            <td>{{ booking.date_time|localtime|date:"m/d/Y g:i a" }}</td>
             <td>{{ booking.duration }}</td>
             <td>{{ booking.language }}</td>
             {% if user.is_staff %}
