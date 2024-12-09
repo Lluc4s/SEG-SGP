@@ -21,6 +21,14 @@ def tutors(request):
         return redirect('dashboard')
 
     tutors_list = Tutor.objects.all()  # Retrieve all tutors from the database
+    sort_order = request.GET.get('sort', 'A-Z')  # Default to A-Z
+
+    # Apply sorting based on the sort parameter
+    if sort_order == 'Z-A':
+        tutors_list = tutors_list.order_by('-user__first_name')  # Sort by first name, descending
+    else:  # Default to A-Z
+        tutors_list = tutors_list.order_by('user__first_name')  # Sort by first name, ascending
+
     return render(request, 'tutors.html', {'tutors': tutors_list})
 
 @login_required
@@ -30,6 +38,14 @@ def tutees(request):
         return redirect('dashboard')
 
     tutees_list = Tutee.objects.all()  # Retrieve all Tutee objects
+    sort_order = request.GET.get('sort', 'A-Z')  # Default to A-Z
+
+    # Apply sorting based on the sort parameter
+    if sort_order == 'Z-A':
+        tutees_list = tutees_list.order_by('-user__first_name')  # Sort by first name, descending
+    else:  # Default to A-Z
+        tutees_list = tutees_list.order_by('user__first_name')  # Sort by first name, ascending
+
     return render(request, 'tutees.html', {'tutees': tutees_list})
 
 class NewBookingView(LoginRequiredMixin, FormView):
