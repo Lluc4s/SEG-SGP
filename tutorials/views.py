@@ -13,25 +13,40 @@ from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, 
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request
 from django.http import HttpResponse
+from django.utils.timezone import now
 
 @login_required
 def tutors(request):
     """Display a list of tutors."""
-    if not request.user.is_staff:  # Check if the user is not staff
-        url = f"{reverse('dashboard')}?status="
-        return redirect(url)  # Redirect to dashboard with query parameters
+    if not request.user.is_staff:
+        return redirect('dashboard')
 
     tutors_list = Tutor.objects.all()  # Retrieve all tutors from the database
+    sort_order = request.GET.get('sort', 'A-Z')  # Default to A-Z
+
+    # Apply sorting based on the sort parameter
+    if sort_order == 'Z-A':
+        tutors_list = tutors_list.order_by('-user__first_name')  # Sort by first name, descending
+    else:  # Default to A-Z
+        tutors_list = tutors_list.order_by('user__first_name')  # Sort by first name, ascending
+
     return render(request, 'tutors.html', {'tutors': tutors_list})
 
 @login_required
 def tutees(request):
     """Display a list of tutees."""
-    if not request.user.is_staff:  # Check if the user is not staff
-        url = f"{reverse('dashboard')}?status="
-        return redirect(url)  # Redirect to dashboard with query parameters
+    if not request.user.is_staff:
+        return redirect('dashboard')
 
     tutees_list = Tutee.objects.all()  # Retrieve all Tutee objects
+    sort_order = request.GET.get('sort', 'A-Z')  # Default to A-Z
+
+    # Apply sorting based on the sort parameter
+    if sort_order == 'Z-A':
+        tutees_list = tutees_list.order_by('-user__first_name')  # Sort by first name, descending
+    else:  # Default to A-Z
+        tutees_list = tutees_list.order_by('user__first_name')  # Sort by first name, ascending
+
     return render(request, 'tutees.html', {'tutees': tutees_list})
 
 class NewBookingView(LoginRequiredMixin, FormView):
@@ -57,8 +72,13 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         """Add context data for GET requests."""
         context = super().get_context_data(**kwargs)
+
         current_user = self.request.user
+
         status_filter = self.request.GET.get('status')
+        tutor_filter = self.request.GET.get('tutor')
+        tutee_filter = self.request.GET.get('tutee')
+
         form = NewBookingForm()
 
         # Retrieve bookings based on user type
@@ -71,15 +91,34 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             tutee = get_object_or_404(Tutee, user=current_user)
             bookings = Booking.objects.filter(tutee=tutee)
 
+        # Update bookings where date_time has passed and is not completed
+        bookings_to_update = bookings.filter(date_time__lte=now(), is_completed=False)
+        bookings_to_update.update(is_completed=True)
+
         # Apply status filter
         if status_filter == 'Completed':
             bookings = bookings.filter(is_completed=True)
         elif status_filter == 'Booked':
             bookings = bookings.filter(is_completed=False)
 
+        # Apply tutor name filter (case-insensitive search)
+        if tutor_filter:
+            bookings = bookings.filter(tutor__user__username=tutor_filter)
+        # Apply tutee name filter (case-insensitive search)
+        if tutee_filter:
+            bookings = bookings.filter(tutee__user__username=tutee_filter)
+        
         # Add context variables
         context['user'] = current_user
         context['bookings'] = bookings
+        # Add distinct lists of tutors and tutees for the dropdowns
+        context['tutors'] = Tutor.objects.all()
+        context['tutees'] = Tutee.objects.all()
+        # Filters
+        context['status_filter'] = status_filter
+        context['tutor_filter'] = tutor_filter
+        context['tutee_filter'] = tutee_filter
+
         return context
 
 @login_required

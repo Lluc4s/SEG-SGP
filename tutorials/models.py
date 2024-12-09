@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from datetime import timedelta
+from datetime import date, timedelta
 
 class User(AbstractUser):
     """Model used for user authentication, and team member related information."""
@@ -185,12 +185,39 @@ class Request(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
-    def save(self, *args, **kwargs):
-    # Determine timeliness
-        if self.booking.date_time.date() - timezone.now().date() < timedelta(weeks=2):
-            self.timeliness = "Delayed"
+    def get_term_and_start_date(self, booking_date):
+        """Return the term and the start date of the term based on the booking date."""
+        # Define the start dates for each term
+        if booking_date.month in [9, 10, 11, 12]:
+            term_start_date = date(booking_date.year, 9, 1)  # September-Christmas term starts September 1st
+            term = "September-Christmas"
+        elif booking_date.month in [1, 2, 3, 4]:
+            term_start_date = date(booking_date.year, 1, 1)  # January-Easter term starts January 1st
+            term = "January-Easter"
+        elif booking_date.month in [5, 6, 7]:
+            term_start_date = date(booking_date.year, 5, 1)  # May-July term starts May 1st
+            term = "May-July"
         else:
-            self.timeliness = "On Time"
+            term_start_date = None
+            term = "Unknown"
+        
+        return term_start_date
+
+    def save(self, *args, **kwargs):
+        # Get the term and start date for the booking
+        term_start_date = self.get_term_and_start_date(self.booking.date_time.date())
+
+        if term_start_date:
+            # Calculate the deadline for submitting requests (2 weeks before the term starts)
+            deadline = term_start_date - timedelta(weeks=2)
+
+            # Determine if the request is timely
+            if self.created_at.date() >= deadline:
+                self.timeliness = "Delayed"
+            else:
+                self.timeliness = "On Time"
+
+        # Save the request
         super().save(*args, **kwargs)
 
     def __str__(self):

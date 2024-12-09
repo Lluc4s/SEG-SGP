@@ -8,20 +8,20 @@
   {% if user.is_authenticated %}
   <ul class="nav flex-column w-100 px-auto">
     <li class="nav-item">
-      <a class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}" href="{% url 'dashboard' %}?status=">
+      <a class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}" href="{% url 'dashboard' %}">
         <i class="bi bi-grid me-2"></i>
         Bookings
       </a>
     </li>
     {% if user.is_staff %}
       <li class="nav-item">
-        <a class="nav-link {% if request.path == '/tutees/' %}active{% endif %}" href="{% url 'tutees' %}">
+        <a class="nav-link {% if request.path == '/tutees/' %}active{% endif %}" href="{% url 'tutees' %}?sort=A-Z">
           <i class="bi bi-person-fill me-2"></i>
           Tutees
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link {% if request.path == '/tutors/' %}active{% endif %}" href="{% url 'tutors' %}">
+        <a class="nav-link {% if request.path == '/tutors/' %}active{% endif %}" href="{% url 'tutors' %}?sort=A-Z">
           <i class="bi bi-person-lines-fill me-2"></i>
           Tutors
         </a>

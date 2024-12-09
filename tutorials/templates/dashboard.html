@@ -4,21 +4,46 @@
   <div class="w-100 mb-4 d-flex justify-content-between align-items-center">
     <h1>Bookings</h1>
 
+    {% if user.is_staff %}
     <a type="button" class="btn btn-secondary d-inline-block px-3 rounded-pill" href="/new_booking">
       <i class="bi bi-plus-circle me-2"></i>
       New Booking
     </a>
+    {% endif %}
   </div>
   <div class="filter-labels">
-    <a href="?status=" class="filter-label {% if request.GET.status == '' %}active{% endif %}">
-        All
-    </a>
-    <a href="?status=Booked" class="filter-label {% if request.GET.status == 'Booked' %}active{% endif %}">
-        Booked
-    </a>
-    <a href="?status=Completed" class="filter-label {% if request.GET.status == 'Completed' %}active{% endif %}">
-        Completed
-    </a>
+    <form method="get" class="d-flex gap-3 mb-4">
+      <!-- Status Dropdown -->
+      <select name="status" class="form-select w-auto">
+          <option value="" {% if status_filter == '' %}selected{% endif %}>All</option>
+          <option value="Booked" {% if status_filter == 'Booked' %}selected{% endif %}>Booked</option>
+          <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+      </select>
+      <!-- Tutor Name Dropdown (visible only if the user is not a tutor) -->
+      {% if not user.is_tutor %}
+      <select name="tutor" class="form-select w-auto">
+          <option value="" {% if tutor_filter == '' %}selected{% endif %}>All Tutors</option>
+          {% for tutor in tutors %}
+          <option value="{{ tutor.user.username }}" {% if tutor_filter == tutor.user.username %}selected{% endif %}>
+              {{ tutor.user }}
+          </option>
+          {% endfor %}
+      </select>
+      {% endif %}
+      <!-- Tutee Name Dropdown (visible only if the user is admin or tutor) -->
+      {% if user.is_staff or user.is_tutor %}
+      <select name="tutee" class="form-select w-auto">
+          <option value="" {% if tutee_filter == '' %}selected{% endif %}>All Tutees</option>
+          {% for tutee in tutees %}
+          <option value="{{ tutee.user.username }}" {% if tutee_filter == tutee.user.username %}selected{% endif %}>
+              {{ tutee.user }}
+          </option>
+          {% endfor %}
+      </select>
+      {% endif %}
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
   </div>
   <hr class="filter-separator">
   <div>

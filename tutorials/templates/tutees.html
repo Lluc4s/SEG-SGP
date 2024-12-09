@@ -6,18 +6,19 @@
       <h1 class="mb-4">Listed Tutees</h1>
       
       <div class="filter-labels">
+        <p class="fst-italic">Sort(firstname): </p>
         <!-- Sort A-Z -->
         <a href="?sort=A-Z" class="filter-label {% if request.GET.sort == 'A-Z' %}active{% endif %}">
-            Sort A-Z
+            A-Z
         </a>
     
         <!-- Sort Z-A -->
         <a href="?sort=Z-A" class="filter-label {% if request.GET.sort == 'Z-A' %}active{% endif %}">
-            Sort Z-A
+            Z-A
         </a>
-    </div>
+      </div>
 
-    <hr class="filter-separator">
+      <hr class="filter-separator">
 
       <table class="table table-striped">
         <thead>
