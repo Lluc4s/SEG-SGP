@@ -5,7 +5,6 @@ from django.db.utils import IntegrityError
 
 
 class TutorModelTestCase(TestCase):
-    """Unit tests for the Tutor model."""
     def setUp(self):
         user = User("@janedoe","jane","doe","janedoe@example.com",True)
         languages = "Python, Java"
@@ -48,3 +47,6 @@ class TutorModelTestCase(TestCase):
         languages = "Java, SQL"
         with self.assertRaises(IntegrityError):
             Tutor.objects.create(user = user, languages_specialised = languages)
+            
+    def test_str_method_returns_username(self):
+        self.assertEqual(str(self.tutor), self.user.username)

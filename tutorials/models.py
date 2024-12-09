@@ -56,14 +56,12 @@ class Tutor(models.Model):
     languages_specialised = models.CharField(
         max_length=200,  # Adjust length as needed
         help_text="Comma-separated list of specialised languages. Example: Python, Java, SQL.",
-        blank=True,
+        blank=False,
     )
 
     def get_languages_list(self):
         """Return a list of languages from the comma-separated field."""
-        if self.languages_specialised:
-            return [lang.strip() for lang in self.languages_specialised.split(',')]
-        return []
+        return [lang.strip() for lang in self.languages_specialised.split(',')]
 
     def __str__(self):
         return self.user.username

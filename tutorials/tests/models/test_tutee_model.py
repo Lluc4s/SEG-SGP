@@ -4,7 +4,7 @@ from tutorials.models import User, Tutee
 from django.db.utils import IntegrityError
 
 
-class TutorModelTestCase(TestCase):
+class TuteeModelTestCase(TestCase):
     def setUp(self):
         user = User("@charlie","charlie","doe","clarliedoe@example.com",False)
         languages = "Python, Java"
@@ -26,3 +26,6 @@ class TutorModelTestCase(TestCase):
         user = User("@charlie","charlie","doe","clarliedoe@example.com",False)
         with self.assertRaises(IntegrityError):
             Tutee.objects.create(user = user)
+
+    def test_str_method_returns_username(self):
+        self.assertEqual(str(self.tutee), self.user.username)
