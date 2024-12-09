@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
             name='Tutor',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('languages_specialised', models.CharField(blank=True, help_text='Comma-separated list of specialised languages. Example: Python, Java, SQL.', max_length=200)),
+                ('languages_specialised', models.CharField(blank=False, help_text='Comma-separated list of specialised languages. Example: Python, Java, SQL.', max_length=200)),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='tutor_user', to=settings.AUTH_USER_MODEL)),
             ],
         ),

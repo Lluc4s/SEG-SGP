@@ -57,7 +57,7 @@ class Tutor(models.Model):
     languages_specialised = models.CharField(
         max_length=200,  # Adjust length as needed
         help_text="Comma-separated list of specialised languages. Example: Python, Java, SQL.",
-        blank=True,
+        blank=False,
     )
 
     def get_languages_list(self):
