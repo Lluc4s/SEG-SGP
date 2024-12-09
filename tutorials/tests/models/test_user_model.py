@@ -158,6 +158,7 @@ class UserModelTestCase(TestCase):
         with self.assertRaises(ValidationError):
             self.user.full_clean()
 
+
     def test_is_tutor_defaults_to_false(self):
         self.assertFalse(self.user.is_tutor, "is_tutor should default to False")
 

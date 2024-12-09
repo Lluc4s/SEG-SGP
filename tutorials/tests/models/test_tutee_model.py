@@ -3,7 +3,6 @@ from django.test import TestCase
 from tutorials.models import User, Tutee
 from django.db.utils import IntegrityError
 
-
 class TuteeModelTestCase(TestCase):
     def setUp(self):
         user = User("@charlie","charlie","doe","clarliedoe@example.com",False)
