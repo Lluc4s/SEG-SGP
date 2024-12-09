@@ -112,7 +112,7 @@ class RequestAdmin(admin.ModelAdmin):
     """Admin customization for Request model."""
 
     # Fields to display in the admin list view
-    list_display = ('tutee', 'booking', 'request_type', 'frequency', 'status', 'created_at')
+    list_display = ('tutee', 'booking', 'request_type', 'frequency', 'status', 'created_at', 'timeliness')
 
     # Fields to filter by in the admin
     list_filter = ('status', 'request_type', 'tutee', 'booking')

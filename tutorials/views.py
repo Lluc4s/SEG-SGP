@@ -90,20 +90,19 @@ def requests(request):
     except Tutee.DoesNotExist:
         return render(request, 'error.html', {'message': 'You do not have a tutee profile.'})
     
-    # Handle the form submission
     if request.method == 'POST':
         form = RequestForm(tutee=tutee, data=request.POST)  # Pass tutee into form
         if form.is_valid():
-            form.save()  # Calls the save method of the form to save the request
-            return redirect('requests')  # Redirect to the requests page to see updated content
+            form.save()  # Save the request
+            return redirect('requests')  # Redirect to refresh
     else:
-        form = RequestForm(tutee=tutee)  # Initialize the form for GET request
+        form = RequestForm(tutee=tutee)  # Initialize for GET request
 
-    # Fetch previous requests made by the tutee
+    # Fetch tutee's requests
     requests = Request.objects.filter(tutee=tutee)
 
     # Handle the tab switching logic
-    tab = request.GET.get('tab', 'make_request')  # Default to 'make_request'
+    tab = request.GET.get('tab', 'make_request')
 
     return render(request, 'requests.html', {
         'form': form,
@@ -120,16 +119,21 @@ def view_requests(request):
 
     # Get the status filter from query parameters (default to 'All')
     status_filter = request.GET.get('status', 'All')
+    timeliness_filter = request.GET.get('timeliness', 'All')
 
     # Fetch requests based on the selected status filter
     if status_filter == 'All':
         requests_list = Request.objects.all()
     else:
         requests_list = Request.objects.filter(status=status_filter)
+    
+    if timeliness_filter != 'All':
+        requests_list = requests_list.filter(timeliness=timeliness_filter)
 
     return render(request, 'view_requests.html', {
         'requests': requests_list,
-        'status_filter': status_filter,  # Pass the current filter for template usage
+        'status_filter': status_filter,
+        'timeliness_filter': timeliness_filter,
     })
 
 @login_required
