@@ -13,6 +13,7 @@ from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, 
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request
 from django.http import HttpResponse
+from django.utils.timezone import now
 
 @login_required
 def tutors(request):
@@ -89,6 +90,10 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         else:
             tutee = get_object_or_404(Tutee, user=current_user)
             bookings = Booking.objects.filter(tutee=tutee)
+
+        # Update bookings where date_time has passed and is not completed
+        bookings_to_update = bookings.filter(date_time__lte=now(), is_completed=False)
+        bookings_to_update.update(is_completed=True)
 
         # Apply status filter
         if status_filter == 'Completed':
