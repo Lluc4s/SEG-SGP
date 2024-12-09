@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from datetime import timedelta
 
 class User(AbstractUser):
     """Model used for user authentication, and team member related information."""
@@ -130,6 +131,11 @@ class Request(models.Model):
         ("Monthly", "Monthly"),
     ]
 
+    TIMELINESS_CHOICES = [
+        ("On Time", "On Time"),
+        ("Delayed", "Delayed"),
+    ]
+
     tutee = models.ForeignKey(
         Tutee,
         on_delete=models.CASCADE,
@@ -171,9 +177,23 @@ class Request(models.Model):
         default="Pending",
         help_text="Current status of the request.",
     )
+    timeliness = models.CharField(
+        max_length=10,
+        choices=TIMELINESS_CHOICES,
+        default="On Time",
+        help_text="Whether the request is On Time or Delayed.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+    # Determine timeliness
+        if self.booking.date_time.date() - timezone.now().date() < timedelta(weeks=2):
+            self.timeliness = "Delayed"
+        else:
+            self.timeliness = "On Time"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.tutee.user.full_name()} - {self.request_type} - {self.status}"
