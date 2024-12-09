@@ -111,21 +111,25 @@ def requests(request):
         'tab': tab
     })
 
-from django.shortcuts import render
-from .models import Request
-
 @login_required
 def view_requests(request):
-    """Handle displaying all requests for the admin."""
-    # Check if the user is an admin
+    """Handle displaying all requests for the admin with filtering options."""
+    # Ensure only admin users can access this functionality
     if not request.user.is_staff:
         return render(request, 'error.html', {'message': 'You do not have permission to view this page.'})
-    
-    # Fetch all requests for the admin
-    requests = Request.objects.all()
+
+    # Get the status filter from query parameters (default to 'All')
+    status_filter = request.GET.get('status', 'All')
+
+    # Fetch requests based on the selected status filter
+    if status_filter == 'All':
+        requests_list = Request.objects.all()
+    else:
+        requests_list = Request.objects.filter(status=status_filter)
 
     return render(request, 'view_requests.html', {
-        'requests': requests
+        'requests': requests_list,
+        'status_filter': status_filter,  # Pass the current filter for template usage
     })
 
 @login_required
