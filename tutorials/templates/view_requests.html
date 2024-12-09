@@ -1,9 +1,20 @@
 {% extends 'base_content.html' %}
 {% block content %}
 <div class="w-100 d-flex flex-column">
-  <h1 class="mb-4">All Requests</h1>
+  <h1 class="mb-4">Requests</h1>
 
-  <!-- Table of all requests for admins -->
+  <!-- Filter Dropdown -->
+  <form method="GET" class="mb-3">
+    <label for="status" class="form-label">Filter Requests by Status:</label>
+    <select name="status" id="status" class="form-select" onchange="this.form.submit()">
+      <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All</option>
+      <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+      <option value="Approved" {% if status_filter == 'Approved' %}selected{% endif %}>Approved</option>
+      <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected</option>
+    </select>
+  </form>
+
+  <!-- Table of Requests -->
   <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
     <table class="table table-striped align-middle">
       <thead>
@@ -31,7 +42,6 @@
               {% csrf_token %}
               <button type="submit" name="status" value="Approved" class="btn btn-sm btn-outline-success">Approve</button>
               <button type="submit" name="status" value="Rejected" class="btn btn-sm btn-outline-danger">Reject</button>
-              <!-- <button type="submit" name="status" value="Pending" class="btn btn-sm btn-outline-warning">Pending</button> -->
             </form>
           </td>
         </tr>
