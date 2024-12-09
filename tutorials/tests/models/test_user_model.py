@@ -157,3 +157,16 @@ class UserModelTestCase(TestCase):
     def _assert_user_is_invalid(self):
         with self.assertRaises(ValidationError):
             self.user.full_clean()
+
+    def test_is_tutor_defaults_to_false(self):
+        self.assertFalse(self.user.is_tutor, "is_tutor should default to False")
+
+    def test_is_tutor_can_be_set_to_true(self):
+        self.user.is_tutor = True
+        self.user.save()
+        self.assertTrue(self.user.is_tutor, "is_tutor should be settable to True")
+
+    def test_is_tutor_must_be_boolean(self):
+        with self.assertRaises(ValidationError, msg="is_tutor must be a boolean value"):
+            self.user.is_tutor = "not_boolean"
+            self.user.full_clean()
