@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
 from .models import User, Tutor, Tutee, Request, Booking
 from django.conf import settings
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -151,9 +151,9 @@ class TutorSignUpForm(NewPasswordMixin, forms.ModelForm):
 
         return user
 
-class NewBookingForm(forms.ModelForm):
+class   BookingForm(forms.ModelForm):
     """
-    Form enabling admins to create a new booking.
+    Form enabling admins to create/edit booking.
     """
     
     class Meta:
@@ -171,7 +171,6 @@ class NewBookingForm(forms.ModelForm):
                 attrs={
                     "type": "datetime-local",
                     "class": "form-control",
-                    "step": "1800",  # 30 minutes = 1800 seconds
                 }
             ),
             "duration": forms.Select(attrs={"class": "form-control"}),
@@ -183,7 +182,21 @@ class NewBookingForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["date_time"].widget.attrs["min"] = datetime.now().strftime("%Y-%m-%dT%H:%M")
+        now = datetime.now()
+        
+        # Round 'now' to the next :00 or :30
+        minute = now.minute
+        if minute % 30 != 0:
+            # Move to the next :00 or :30
+            remainder = 30 - (minute % 30)
+            now += timedelta(minutes=remainder)
+            now = now.replace(second=0, microsecond=0)
+        else:
+            now = now.replace(second=0, microsecond=0)
+
+        # Set 'min' to the rounded current time
+        self.fields["date_time"].widget.attrs["min"] = now.strftime("%Y-%m-%dT%H:%M")
+        self.fields["date_time"].widget.attrs["step"] = "1800"  # 30 minutes = 1800 seconds
 
     def clean(self):
         """
@@ -221,18 +234,19 @@ class NewBookingForm(forms.ModelForm):
 
         return cleaned_data
     
-    def save(self):
-        """Create a new booking."""
+    def save(self, commit=True):
+        """Save the booking, either as a new or updated one."""
+        booking = super().save(commit=False)
 
-        super().save(commit=False)
-        booking = Booking.objects.create(
-            date_time=self.cleaned_data.get('date_time'),
-            duration=self.cleaned_data.get('duration'),
-            language=self.cleaned_data.get('language'),
-            tutor=self.cleaned_data.get('tutor'),
-            tutee=self.cleaned_data.get('tutee'),
-            price=self.cleaned_data.get('price')
-        )
+        # If the form is saving an existing booking, apply updates
+        if not self.instance.pk:
+            # It's a new booking, no need to apply custom logic before save
+            if commit:
+                booking.save()
+        else:
+            # Update the booking
+            if commit:
+                booking.save()
 
         return booking
 

@@ -9,7 +9,7 @@ from django.views import View
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, TutorSignUpForm, RequestForm, NewBookingForm
+from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, TutorSignUpForm, RequestForm, BookingForm
 from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request
 from django.http import HttpResponse
@@ -52,7 +52,7 @@ def tutees(request):
 class NewBookingView(LoginRequiredMixin, FormView):
     """Display the new booking screen & handle create booking."""
 
-    form_class = NewBookingForm
+    form_class = BookingForm
     template_name = "new_booking.html"
 
     def form_valid(self, form):
@@ -63,8 +63,7 @@ class NewBookingView(LoginRequiredMixin, FormView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        url = f"{reverse('dashboard')}?status="
-        return url
+        return reverse('dashboard')
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard.html'
@@ -78,8 +77,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         status_filter = self.request.GET.get('status')
         tutor_filter = self.request.GET.get('tutor')
         tutee_filter = self.request.GET.get('tutee')
-
-        form = NewBookingForm()
 
         # Retrieve bookings based on user type
         if current_user.is_staff:
@@ -121,6 +118,32 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         return context
 
+    def post(self, request, *args, **kwargs):
+        """Handle delete requests."""
+        booking_id = request.POST.get("delete_booking_id")
+        try:
+            booking = Booking.objects.get(id=booking_id)
+            booking.delete()
+            messages.success(request, "Booking deleted successfully.")
+        except Booking.DoesNotExist:
+            messages.error(request, "Booking not found.")
+
+        return self.get(request, *args, **kwargs)
+
+class EditBookingView(LoginRequiredMixin, UpdateView):
+    model = Booking
+    form_class = BookingForm
+    template_name = "edit_booking.html"  # Ensure you create this template
+
+    def get_object(self, queryset=None):
+        booking_id = self.kwargs.get('booking_id')  # Get booking_id from the URL
+        return get_object_or_404(Booking, id=booking_id)
+
+    def get_success_url(self):
+        """Return redirect URL after successful update."""
+        messages.add_message(self.request, messages.SUCCESS, "Booking updated!")
+        return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+        
 @login_required
 def requests(request):
     """Handle displaying the correct tab based on user input."""

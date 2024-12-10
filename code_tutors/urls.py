@@ -25,6 +25,7 @@ urlpatterns = [
     path('', views.LogInView.as_view(), name=''),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('new_booking', views.NewBookingView.as_view(), name='new_booking'),
+    path('edit_booking/<int:booking_id>', views.EditBookingView.as_view(), name='edit_booking'),
     path('log_out/', views.log_out, name='log_out'),
     path('password/', views.PasswordView.as_view(), name='password'),
     path('profile/', views.ProfileUpdateView.as_view(), name='profile'),
