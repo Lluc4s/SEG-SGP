@@ -120,6 +120,7 @@ class Request(models.Model):
     REQUEST_CHOICES = [
         ("Change", "Change Booking"),
         ("Cancel", "Cancel Booking"),
+        ("New Booking", "New Booking"),
     ]
 
     FREQUENCY_CHOICES = [
@@ -134,6 +135,16 @@ class Request(models.Model):
         ("Delayed", "Delayed"),
     ]
 
+    LANGUAGE_CHOICES = [
+        ("N/A", "N/A"),
+        ("C++", "C++"),
+        ("Python", "Python"),
+        ("Java", "Java"),
+        ("Javascript", "Javascript"),
+        ("R", "R"),
+        ("SQL", "SQL"),
+    ]
+
     tutee = models.ForeignKey(
         Tutee,
         on_delete=models.CASCADE,
@@ -145,14 +156,15 @@ class Request(models.Model):
         Booking,
         on_delete=models.CASCADE,
         related_name="requests",
-        help_text="The booking related to the request.",
-        default=""
+        help_text="Select booking related to the request or request new booking.",
+        null = True,
+        default=None
     )
     request_type = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=REQUEST_CHOICES,
         help_text="Type of request (e.g., change or cancel the booking).",
-        default="Change Booking"
+        default="New Booking"
     )
     frequency = models.CharField(
         max_length=15,
@@ -160,6 +172,14 @@ class Request(models.Model):
         help_text="How often the request should recur.",
         default="One-time"
     )
+
+    language = models.CharField(
+        max_length=15,
+        choices=LANGUAGE_CHOICES,
+        help_text="Select language related to request if applicable",
+        default="N/A"
+    )
+
     details = models.TextField(
         blank=True,
         help_text="Optional details or comments about the request."
@@ -205,7 +225,10 @@ class Request(models.Model):
 
     def save(self, *args, **kwargs):
         # Get the term and start date for the booking
-        term_start_date = self.get_term_and_start_date(self.booking.date_time.date())
+        if self.booking:
+            term_start_date = self.get_term_and_start_date(self.booking.date_time.date())
+        else:
+            term_start_date = self.get_term_and_start_date(self.created_at)
 
         if term_start_date:
             # Calculate the deadline for submitting requests (2 weeks before the term starts)
@@ -222,7 +245,13 @@ class Request(models.Model):
 
     def __str__(self):
         return f"{self.tutee.user.full_name()} - {self.request_type} - {self.status}"
-
+    
+    def get_booking_display(self):
+        if self.booking:
+            return self.booking
+        else:
+            return f"New Booking Request: {self.language}"
+        
 # @receiver(post_save,sender=User)
 # def user_create(sender,instance,created,**kwargs):
 #     if created:
