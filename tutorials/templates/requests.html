@@ -78,7 +78,7 @@
           <tbody>
             {% for request in requests %}
             <tr>
-              <td>{{ request.booking }}</td>
+              <td>{{ request.get_booking_display }}</td>
               <td>{{ request.request_type }}</td>
               <td>{{ request.frequency }}</td>
               <td>
