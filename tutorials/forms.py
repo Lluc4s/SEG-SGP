@@ -254,45 +254,33 @@ class RequestForm(forms.ModelForm):
     """Form enabling tutees to submit a request related to a booking."""
 
     class Meta:
-        """Form options."""
         model = Request
-        fields = ['booking', 'request_type', 'frequency', 'details']
+        fields = ['booking', 'request_type', 'language', 'frequency', 'details'] 
         widgets = {
             'booking': forms.Select(attrs={'class': 'form-control'}),
-            'request_type': forms.Select(attrs={'class':'form-control'}),
+            'request_type': forms.Select(attrs={'class': 'form-control'}),
             'frequency': forms.Select(attrs={'class': 'form-control'}),
-            'details': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Provide additional details if needed', 'class': 'form-control'}),
+            'details': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Provide additional details if needed',
+                'class': 'form-control'
+            }),
+            'language': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'booking': 'Select Booking',
+            'booking': 'Select Booking or Request New Booking',
             'request_type': 'Request Type',
-            'frequency' : 'Frequency',
+            'frequency': 'Frequency',
             'details': 'Additional Details',
+            'language': 'Preferred Language',
         }
-        help_texts = {
-            'booking': 'Select the booking related to your request.',
-            'request_type': 'Select the type of request (e.g., Change or Cancel the booking).',
-            'frequency' : "Select how often this request should be repeated, if applicable.",
-            'details': 'Provide any relevant information about your request.',
-        }
+        
 
-    def __init__(self, tutee, *args, **kwargs):
-        """Filter bookings for the logged-in tutee."""
+    def __init__(self, tutee=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['booking'].queryset = Booking.objects.filter(tutee=tutee)
+        queryset = Booking.objects.filter(tutee=tutee)
+        # Create a dummy booking option
+        self.fields['booking'].required = False
+        self.fields['booking'].empty_label = "Request new Booking"
         self.fields['request_type'].empty_label = None
         self.fields['frequency'].empty_label = None
-    
-    def save(self, commit=True):
-        """Create and save the Request model, associating it with the tutee."""
-        # Create a new Request instance but do not save it yet
-        request_instance = super().save(commit=False)
-
-        # Set the tutee for the request
-        tutee = self.instance.booking.tutee  # Get the tutee from the booking
-        request_instance.tutee = tutee
-
-        # Save the request instance
-        if commit:
-            request_instance.save()
-        return request_instance
