@@ -5,9 +5,8 @@ from django.db.utils import IntegrityError
 
 class TuteeModelTestCase(TestCase):
     def setUp(self):
-        user = User("@charlie","charlie","doe","clarliedoe@example.com",False)
-        languages = "Python, Java"
-        self.tutee = Tutee(user = user)
+        self.user = User("@charlie","charlie","doe","clarliedoe@example.com",False)
+        self.tutee = Tutee(user = self.user)
     
     def _assert_tutee_is_valid(self):
         try:

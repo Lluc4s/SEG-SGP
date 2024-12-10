@@ -8,6 +8,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from datetime import date, timedelta
+from django.core.validators import MinValueValidator
+
 
 class User(AbstractUser):
     """Model used for user authentication, and team member related information."""
@@ -99,7 +101,9 @@ class Booking(models.Model):
     price = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        default=0.00
+        default=0.00,
+        validators=[MinValueValidator(0.00)]
+
     )
 
     class Meta:

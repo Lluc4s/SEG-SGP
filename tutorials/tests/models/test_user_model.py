@@ -1,4 +1,3 @@
-"""Unit tests for the User model."""
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from tutorials.models import User
@@ -91,7 +90,6 @@ class UserModelTestCase(TestCase):
     def test_last_name_must_not_contain_more_than_50_characters(self):
         self.user.last_name = 'x' * 51
         self._assert_user_is_invalid()
-
 
     def test_email_must_not_be_blank(self):
         self.user.email = ''
