@@ -144,21 +144,32 @@ class EditBookingView(LoginRequiredMixin, UpdateView):
         messages.add_message(self.request, messages.SUCCESS, "Booking updated!")
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
         
-@login_required
 def requests(request):
     """Handle displaying the correct tab based on user input."""
     try:
         tutee = request.user.tutee_user  # Access the related Tutee object
     except Tutee.DoesNotExist:
         return render(request, 'error.html', {'message': 'You do not have a tutee profile.'})
-    
+
     if request.method == 'POST':
-        form = RequestForm(tutee=tutee, data=request.POST)  # Pass tutee into form
+        form = RequestForm(tutee=tutee, data=request.POST)
         if form.is_valid():
-            form.save()  # Save the request
-            return redirect('requests')  # Redirect to refresh
+            request_instance = form.save(commit=False)
+            request_instance.tutee = tutee  # Explicitly set the tutee field
+
+            # Check if "Make New Booking" is selected
+            if form.cleaned_data['booking'] == None:
+                # Create a dummy new booking
+                request_instance.booking = None  # Ensure no booking is linked
+            else:
+                request_instance.booking = form.cleaned_data['booking']  # Use the selected booking
+
+            # Save the request
+            request_instance.save()
+            return redirect('requests')  # Redirect to refresh the page
     else:
-        form = RequestForm(tutee=tutee)  # Initialize for GET request
+        print("I'm working")
+        form = RequestForm(tutee=tutee)
 
     # Fetch tutee's requests
     requests = Request.objects.filter(tutee=tutee)
@@ -171,6 +182,7 @@ def requests(request):
         'requests': requests,
         'tab': tab
     })
+
 
 @login_required
 def view_requests(request):
