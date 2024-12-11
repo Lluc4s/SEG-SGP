@@ -29,6 +29,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='request',
             name='request_type',
-            field=models.CharField(choices=[('Change', 'Change Booking'), ('Cancel', 'Cancel Booking'), ('New Booking', 'New Booking')], default='New Booking', help_text='Type of request (e.g., change or cancel the booking).', max_length=15),
+            field=models.CharField(choices=[('Change', 'Change Booking'), ('Cancel', 'Cancel Booking'), ('New Booking', 'New Booking')], default='New Booking', help_text='Type of request (e.g., change, cancel or request new booking).', max_length=15),
         ),
     ]
