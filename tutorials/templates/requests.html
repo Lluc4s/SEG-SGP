@@ -20,7 +20,7 @@
     <!-- Form for submitting a request (default behavior if no tab is selected) -->
     <form method="POST">
       {% csrf_token %}
-      {{ form.as_p }}
+      {% include 'partials/bootstrap_form.html' with form=form %}
       <button type="submit" class="btn btn-primary">Submit Request</button>
     </form>
   {% elif request.GET.tab == 'view_requests' %}
