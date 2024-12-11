@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tutorials', '0007_request_timeliness'),
+        ('tutorials', '0007_request_timeliness_language_alter_request_booking_and_more'),
     ]
 
     operations = [
