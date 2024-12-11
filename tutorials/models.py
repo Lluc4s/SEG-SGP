@@ -163,7 +163,7 @@ class Request(models.Model):
     request_type = models.CharField(
         max_length=15,
         choices=REQUEST_CHOICES,
-        help_text="Type of request (e.g., change or cancel the booking).",
+        help_text="Type of request (e.g., change, cancel or request new booking).",
         default="New Booking"
     )
     frequency = models.CharField(

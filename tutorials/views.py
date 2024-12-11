@@ -189,11 +189,12 @@ def requests(request):
             for admin in admins:
                 Notification.objects.create(
                     user=admin,
-                    message=f"{req.request_type} request from {request.user.username}.",
+                    message=f"{request_instance.request_type} request from {request.user.username}.",
                 )
+
+            messages.success(request, "Request successfully sent!")
             return redirect('requests')  # Redirect to refresh the page
     else:
-        print("I'm working")
         form = RequestForm(tutee=tutee)
 
     # Fetch tutee's requests
@@ -256,11 +257,11 @@ def change_request_status(request, request_id):
             # Notify recipient of status change
             Notification.objects.create(
                 user=req.tutee.user,
-                message=f"{request.user.username} changed request status to {req.status}.",
+                message=f"Admin changed request submitted on {req.created_at.strftime('%Y-%m-%d %H:%M')} status to {req.status}.",
             )
 
     # Redirect back to the requests page
-    return redirect('view_requests')  # Replace 'view_requests' with your admin request page name
+    return redirect('view_requests')
 
 @login_required
 def invoices(request):

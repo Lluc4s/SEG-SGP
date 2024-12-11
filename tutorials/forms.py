@@ -274,16 +274,43 @@ class RequestForm(forms.ModelForm):
             'details': 'Additional Details',
             'language': 'Preferred Language',
         }
-        
-
+    
     def __init__(self, tutee=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        queryset = Booking.objects.filter(tutee=tutee)
-        # Create a dummy booking option
-        self.fields['booking'].required = False
+        self.fields['booking'].queryset = Booking.objects.filter(tutee=tutee)
+        self.fields['booking'].required = False  # Allow the field to be blank (indicates new booking request)
         self.fields['booking'].empty_label = "Request new Booking"
         self.fields['request_type'].empty_label = None
         self.fields['frequency'].empty_label = None
+
+    def clean(self):
+        """Add custom validation for the form."""
+        cleaned_data = super().clean()
+        booking = cleaned_data.get("booking")
+        request_type = cleaned_data.get("request_type")
+        language = cleaned_data.get("language")
+        
+        # Validation: If no booking is selected, request type must be "New Booking"
+        if not booking and request_type != "New Booking":
+            self.add_error(
+                "request_type", 
+                "Request type must be 'New Booking' when no booking is selected."
+            )
+        
+        if not booking and language == "N/A":
+            self.add_error(
+                "language",
+                "Please select a language when making new booking request"
+            )
+
+        # Validation: If a booking is selected, language must be "N/A"
+        if booking and language != "N/A":
+            self.add_error(
+                "language", 
+                "Language must be 'N/A' when a previous booking is selected."
+            )
+
+        return cleaned_data
         
 class InquiryForm(forms.ModelForm):
     recipient = forms.ModelChoiceField(
