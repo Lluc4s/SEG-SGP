@@ -4,12 +4,14 @@ from datetime import datetime, timedelta
 from tutorials.models import Booking, Tutor, Tutee, User
 
 class BookingModelTestCase(TestCase):
+
     def setUp(self):
         self.tutor_user = User.objects.create_user(
-            username='@tutoruser', email='tutor@example.com', first_name='Tutor', last_name='User', is_tutor=True
+            username='@janedoe', email='janedoe@example.com', first_name='Jane', last_name='Doe', is_tutor=True
         )
+
         self.tutee_user = User.objects.create_user(
-            username='@tuteeuser', email='tutee@example.com', first_name='Tutee', last_name='User', is_tutor=False
+            username='@charliedoe', email='charliedoe@example.com', first_name='Charlie', last_name='Doe', is_tutor=False
         )
         self.tutor = Tutor.objects.create(user=self.tutor_user)
         self.tutee = Tutee.objects.create(user=self.tutee_user)
@@ -21,9 +23,20 @@ class BookingModelTestCase(TestCase):
             tutee=self.tutee,
             price=50.00
         )
+
+    def test_tutor_languages_specialised_includes_booking_languages(self):
+        self.tutor.languages_specialised = "Python, Java"
+        self.booking.language = "Python"
+        self.booking.save()
+        self.assertIn(self.booking.language,self.tutor.languages_specialised)
+
+    def test_tutor_languages_sepcialised_does_not_include_booking_language_is_invalid(self):
+        self.tutor.languages_specialised = "Python, Java"
+        self.booking.language = "SQL"
+        self.assertNotIn(self.booking.language,self.tutor.languages_specialised)
     
     def test_str_method_returns_correct_format(self):
-        expected_str = "12/01/2023 02:00 PM - 04:00 PM : Python with Tutor User"
+        expected_str = "12/01/2023 02:00 PM - 04:00 PM : Python with Jane Doe"
         self.assertEqual(str(self.booking), expected_str)
     
     def test_meta_ordering(self):
@@ -44,7 +57,7 @@ class BookingModelTestCase(TestCase):
             self.booking.full_clean()
 
     def test_duration_must_be_valid(self):
-        self.booking.duration = timedelta(hours=-1)  # Invalid duration
+        self.booking.duration = timedelta(hours=-1)
         with self.assertRaises(ValidationError):
             self.booking.full_clean()
 
@@ -63,7 +76,7 @@ class BookingModelTestCase(TestCase):
 
     def test_price_can_be_zero(self):
         self.booking.price = 0.00
-        self.booking.full_clean()  # Should not raise any errors
+        self.booking.full_clean() 
     def test_is_completed_must_be_boolean(self):
         with self.assertRaises(ValidationError, msg="is_completed must be a boolean value"):
             self.booking.is_completed = "not_boolean"
