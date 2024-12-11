@@ -268,3 +268,39 @@ class Request(models.Model):
 #             instance.tutor_user.save()
 #         else:
 #             instance.tutee_user.save()
+
+class Inquiry(models.Model):
+    # Inquiry fields
+    SENDER_CHOICES = [
+        ('Tutee', 'Tutee'),
+        ('Tutor', 'Tutor'),
+    ]
+
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_inquiries')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_inquiries')  # Admin will be a user with is_staff=True
+    message = models.TextField()
+    response = models.TextField(blank=True, null=True)
+    status = models.CharField(
+        max_length=10,
+        choices=[('Pending', 'Pending'), ('Responded', 'Responded')],
+        default='Pending'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Inquiry from {self.sender.username} to {self.recipient.username} - {self.status}"
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'Notification for {self.user.username} - {self.message}'
+
+    class Meta:
+        ordering = ['-created_at'] 

@@ -36,7 +36,10 @@ urlpatterns = [
     path('tutees/', views.tutees, name='tutees'),
     path('requests/', views.requests, name='requests'),
     path('view_requests/', views.view_requests, name='view_requests'),
-    path('change-status/<int:request_id>/', views.change_request_status, name='change_request_status')
-
+    path('change-status/<int:request_id>/', views.change_request_status, name='change_request_status'),
+    path('inbox/', views.inbox, name='inbox'),
+    path('send-inquiry/', views.send_inquiry, name='send_inquiry'),
+    path('inquiries/respond/<int:inquiry_id>/', views.respond_to_inquiry, name='respond_to_inquiry'),
+    path('delete-notification/', views.delete_notification, name='delete_notification')
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

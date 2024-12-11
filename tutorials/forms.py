@@ -2,7 +2,7 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
-from .models import User, Tutor, Tutee, Request, Booking
+from .models import User, Tutor, Tutee, Request, Booking, Inquiry
 from django.conf import settings
 from datetime import datetime, timedelta
 
@@ -284,3 +284,22 @@ class RequestForm(forms.ModelForm):
         self.fields['booking'].empty_label = "Request new Booking"
         self.fields['request_type'].empty_label = None
         self.fields['frequency'].empty_label = None
+        
+class InquiryForm(forms.ModelForm):
+    recipient = forms.ModelChoiceField(
+        queryset=User.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Recipient",
+    )
+
+    class Meta:
+        model = Inquiry
+        fields = ['message', 'recipient']
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user and not user.is_staff:
+            self.fields['recipient'].queryset = User.objects.filter(is_staff=True)
+            self.fields['recipient'].widget = forms.HiddenInput()

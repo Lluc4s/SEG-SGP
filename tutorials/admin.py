@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Booking, Tutor, Tutee, Request
+from .models import User, Booking, Tutor, Tutee, Request, Inquiry
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -132,3 +132,10 @@ class RequestAdmin(admin.ModelAdmin):
             'fields': ('created_at',),
         }),
     )
+
+@admin.register(Inquiry)
+class InquiryAdmin(admin.ModelAdmin):
+    list_display = ('sender', 'recipient', 'status', 'created_at')
+    list_filter = ('status', 'recipient')
+    search_fields = ('sender__username', 'message')
+    ordering = ('-created_at',)
