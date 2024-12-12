@@ -5,8 +5,6 @@ from tutorials.models import Request,Booking, Tutor,User, Tutee
 from datetime import datetime, timedelta,date
 from django.core.exceptions import ValidationError
 
-
-
 class RequestModelTestCase(TestCase):
 
     def setUp(self):
@@ -37,13 +35,12 @@ class RequestModelTestCase(TestCase):
         return get_user_model().objects.create_user(username=username, password="password123")
 
     def test_request_fields_default_values(self):
-
-        self.assertEqual(self.request.request_type, "Change Booking")
+        self.assertEqual(self.request.request_type, "New Booking")
         self.assertEqual(self.request.frequency, "One-time")
         self.assertEqual(self.request.status, "Pending")
 
     def test_str_method_returns_correct_format(self):
-        expected_str = f"{self.tutee.user.full_name()} - Change Booking - Pending"
+        expected_str = f"{self.tutee.user.full_name()} - New Booking - Pending"
         self.assertEqual(str(self.request), expected_str)
 
     def test_request_timeliness_delayed(self):
@@ -84,3 +81,21 @@ class RequestModelTestCase(TestCase):
         with self.assertRaises(ValidationError):
             self.request.full_clean()
 
+    def test_get_booking_display_with_existing_booking(self):
+        self.request = Request.objects.create(
+            tutee=self.tutee,
+            booking=self.booking,
+        )
+        self.request.save()
+        booking_display = self.request.get_booking_display()
+        self.assertEqual(booking_display, self.booking)
+
+    def test_get_booking_display_without_existing_booking(self):
+        self.tutee = Tutee.objects.create(user=User.objects.create_user(username='tutee', email='tutee@example.com', password='password'))
+        self.request = Request.objects.create(
+            tutee=self.tutee,
+        )
+        booking_display = self.request.get_booking_display()
+        self.request.save()
+        expected_result = f"New Booking Request: N/A"
+        self.assertEqual(booking_display, expected_result)
