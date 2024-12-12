@@ -1,10 +1,12 @@
 """Forms for the tutorials app."""
 from django import forms
+from django.forms import ValidationError
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
 from .models import User, Tutor, Tutee, Request, Booking, Inquiry, NewBookingRequest, ChangeCancelBookingRequest
 from django.conf import settings
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -209,8 +211,23 @@ class BookingForm(forms.ModelForm):
         date_time = cleaned_data.get("date_time")
         duration = cleaned_data.get("duration")
 
+        if not isinstance(date_time, datetime):
+            raise forms.ValidationError("Invalid date-time format.")
+
+        if date_time:
+            if date_time < timezone.now():
+                raise forms.ValidationError("The booking date and time cannot be in the past.")
+        else:
+            raise forms.ValidationError("The booking date and time cannot be None")
+        
         # Calculate the end time of the current booking
-        end_time = date_time + duration
+        if date_time and duration:
+            try:
+                end_time = date_time + duration
+            except TypeError:
+                raise ValidationError("Invalid duration.")
+        else:
+            raise ValidationError("Both date_time and duration are required.")
 
         if tutor and language and language not in tutor.get_languages_list():
             self.add_error(
