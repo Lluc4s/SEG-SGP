@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
-from datetime import datetime, timedelta
-from tutorials.models import Booking, Tutor, Tutee, User
+from datetime import datetime, timedelta,date
+from tutorials.models import Booking, Tutor, Tutee, User,Request
 
 class BookingModelTestCase(TestCase):
 
@@ -23,6 +23,22 @@ class BookingModelTestCase(TestCase):
             tutee=self.tutee,
             price=50.00
         )
+    def test_get_term_and_start_date(self):
+        booking_date = date(2024, 11, 15)
+        term_start_date = Request().get_term_and_start_date(booking_date)
+        self.assertEqual(term_start_date, date(2024, 9, 1))
+
+        booking_date = date(2025, 2, 1)
+        term_start_date = Request().get_term_and_start_date(booking_date)
+        self.assertEqual(term_start_date, date(2025, 1, 1))
+
+        booking_date = date(2025, 6, 10)
+        term_start_date = Request().get_term_and_start_date(booking_date)
+        self.assertEqual(term_start_date, date(2025, 5, 1))
+
+        booking_date = date(2025, 8, 15)
+        term_start_date = Request().get_term_and_start_date(booking_date)
+        self.assertIsNone(term_start_date)
 
     def test_tutor_languages_specialised_includes_booking_languages(self):
         self.tutor.languages_specialised = "Python, Java"

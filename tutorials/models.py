@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from django.core.validators import MinValueValidator
 
 
@@ -211,15 +211,20 @@ class Request(models.Model):
         # Get the term and start date for the booking
         term_start_date = self.get_term_and_start_date(self.booking.date_time.date())
 
-        if term_start_date:
-            # Calculate the deadline for submitting requests (2 weeks before the term starts)
-            deadline = term_start_date - timedelta(weeks=2)
+        # Calculate the deadline for submitting requests (2 weeks before the term starts)
+        deadline = term_start_date - timedelta(weeks=2)
 
-            # Determine if the request is timely
-            if self.created_at.date() >= deadline:
-                self.timeliness = "Delayed"
-            else:
-                self.timeliness = "On Time"
+        # Convert deadline to datetime for comparison if created_at is a date
+        if isinstance(self.created_at, date) and not isinstance(self.created_at, datetime):
+            created_at_date = self.created_at
+        else:
+            created_at_date = self.created_at.date()
+
+        # Determine if the request is timely
+        if created_at_date >= deadline:
+            self.timeliness = "Delayed"
+        else:
+            self.timeliness = "On Time"
 
         # Save the request
         super().save(*args, **kwargs)

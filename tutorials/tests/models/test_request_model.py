@@ -47,18 +47,15 @@ class RequestModelTestCase(TestCase):
         self.assertEqual(str(self.request), expected_str)
 
     def test_request_timeliness_delayed(self):
-        term_start_date = date(self.booking.date_time.year, 9, 1)  # September-Christmas term starts September 1st
-
+        term_start_date = date(self.booking.date_time.year, 9, 1) 
         self.request.created_at = term_start_date + timedelta(days=25)
+        self.request.save()
         self.assertEqual(self.request.timeliness, "Delayed")
 
     def test_request_timeliness_on_time(self):
         term_start_date = date(self.booking.date_time.year, 9, 1) 
-
         self.request.created_at = term_start_date - timedelta(weeks=5)
-
-        self.request.timeliness ="On Time"
-
+        self.request.save()
         self.assertEqual(self.request.timeliness, "On Time")
 
     def test_request_ordering(self):
