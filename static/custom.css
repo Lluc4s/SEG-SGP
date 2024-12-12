@@ -362,3 +362,17 @@ body {
   border: none; /* Remove default border */
   border-top: 1px solid #aaaaaa; /* Add a light gray horizontal line */
 }
+
+.pagination .previous-link {
+  color: var(--dark-purple) !important;
+}
+.pagination .previous-link:hover {
+  color: var(--dark-purple) !important; 
+}
+
+.pagination .next-link {
+  color: var(--dark-purple) !important;
+}
+.pagination .next-link:hover {
+  color: var(--dark-purple) !important; 
+}

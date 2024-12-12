@@ -14,6 +14,7 @@ from tutorials.helpers import login_prohibited
 from .models import User, Booking, Tutor, Tutee, Request, NewBookingRequest, ChangeCancelBookingRequest, Inquiry, Notification
 from django.http import HttpResponse
 from django.utils.timezone import now
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 @login_required
 def tutors(request):
@@ -24,13 +25,17 @@ def tutors(request):
     tutors_list = Tutor.objects.all()  # Retrieve all tutors from the database
     sort_order = request.GET.get('sort', 'A-Z')  # Default to A-Z
 
-    # Apply sorting based on the sort parameter
-    if sort_order == 'Z-A':
-        tutors_list = tutors_list.order_by('-user__first_name')  # Sort by first name, descending
-    else:  # Default to A-Z
-        tutors_list = tutors_list.order_by('user__first_name')  # Sort by first name, ascending
 
-    return render(request, 'tutors.html', {'tutors': tutors_list})
+    if sort_order == 'Z-A':
+        tutors_list = tutors_list.order_by('-user__first_name')
+    else:
+        tutors_list = tutors_list.order_by('user__first_name')
+
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(tutors_list, 10) 
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'tutors.html', {'page_obj': page_obj})
 
 @login_required
 def tutees(request):
@@ -47,7 +52,11 @@ def tutees(request):
     else:  # Default to A-Z
         tutees_list = tutees_list.order_by('user__first_name')  # Sort by first name, ascending
 
-    return render(request, 'tutees.html', {'tutees': tutees_list})
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(tutees_list, 10) 
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'tutees.html', {'page_obj': page_obj})
 
 class NewBookingView(LoginRequiredMixin, FormView):
     """Display the new booking screen & handle create booking."""
@@ -93,6 +102,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         status_filter = self.request.GET.get('status')
         tutor_filter = self.request.GET.get('tutor')
         tutee_filter = self.request.GET.get('tutee')
+        page = self.request.GET.get('page', 1)
 
         # Retrieve bookings based on user type
         if current_user.is_staff:
@@ -120,7 +130,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # Apply tutee name filter (case-insensitive search)
         if tutee_filter:
             bookings = bookings.filter(tutee__user__username=tutee_filter)
-        
+            
+        page = self.request.GET.get('page', 1)
+        paginator = Paginator(bookings, 6)
+        try:
+            paginated_bookings = paginator.page(page)
+        except PageNotAnInteger:
+            paginated_bookings = paginator.page(1)
+        except EmptyPage:
+            paginated_bookings = paginator.page(paginator.num_pages)
+
         # Add context variables
         context['user'] = current_user
         context['bookings'] = bookings
@@ -131,6 +150,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['status_filter'] = status_filter
         context['tutor_filter'] = tutor_filter
         context['tutee_filter'] = tutee_filter
+        context['bookings'] = paginated_bookings
 
         return context
 
@@ -194,6 +214,10 @@ class RequestsView(LoginRequiredMixin, TemplateView):
         elif is_late_filter == "On Time":
             requests = requests.filter(is_late=False)
         
+        paginator = Paginator(requests, 4)  # Display 10 requests per page
+        page_number = self.request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
         # Add context variables
         context['user'] = current_user
         context['requests'] = requests
@@ -203,7 +227,7 @@ class RequestsView(LoginRequiredMixin, TemplateView):
         context['status_filter'] = status_filter
         context['tutee_filter'] = tutee_filter
         context['is_late_filter'] = is_late_filter
-
+        context['page_obj'] = page_obj
         return context
 
     def post(self, request, *args, **kwargs):
@@ -369,13 +393,21 @@ def invoices(request):
     elif status_filter == "Pending":
         bookings = bookings.filter(is_paid=False)
     
+    paginator = Paginator(bookings, 6) 
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     if request.method == 'POST':
         booking = Booking.objects.get(pk = request.POST.get("booking_id"))
         booking.is_paid = not booking.is_paid
         booking.save()
         return redirect('invoices')
 
-    return render(request, 'invoices.html', {"bookings": bookings, "total": total})
+    return render (request, 'invoices.html', {
+        "page_obj": page_obj,
+        "total": total,
+        "status_filter": status_filter,
+    })
     
 class LoginProhibitedMixin:
     """Mixin that redirects when a user is logged in."""
