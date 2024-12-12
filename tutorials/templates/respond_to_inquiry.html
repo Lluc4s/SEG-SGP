@@ -1,0 +1,48 @@
+{% extends 'base_content.html' %}
+
+{% block title %}Respond to Inquiry{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Respond to Inquiry</h1>
+
+    <!-- Inquiry Information -->
+    <div class="inquiry-info mb-4">
+        <p><strong>From:</strong> {{ inquiry.sender.username }}</p>
+        <p><strong>Message:</strong></p>
+        <blockquote class="inquiry-message">
+            {{ inquiry.message }}
+        </blockquote>
+    </div>
+
+    <!-- Response Form -->
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group mb-4">
+            <label for="response" class="form-label">Your Response</label>
+            <textarea id="response" name="response" rows="5" class="form-control" placeholder="Type your response..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send Response</button>
+    </form>
+</div>
+
+<!-- Scoped Styling -->
+<style>
+    /* Inquiry Info Section */
+    .inquiry-info {
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .inquiry-message {
+        background-color: #e9e9ff;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+        font-style: italic;
+    }
+</style>
+{% endblock %}

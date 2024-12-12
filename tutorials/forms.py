@@ -2,9 +2,9 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
-from .models import User, Tutor, Tutee, Request, Booking
+from .models import User, Tutor, Tutee, Request, Booking, Inquiry
 from django.conf import settings
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -151,9 +151,9 @@ class TutorSignUpForm(NewPasswordMixin, forms.ModelForm):
 
         return user
 
-class NewBookingForm(forms.ModelForm):
+class   BookingForm(forms.ModelForm):
     """
-    Form enabling admins to create a new booking.
+    Form enabling admins to create/edit booking.
     """
     
     class Meta:
@@ -171,7 +171,6 @@ class NewBookingForm(forms.ModelForm):
                 attrs={
                     "type": "datetime-local",
                     "class": "form-control",
-                    "step": "1800",  # 30 minutes = 1800 seconds
                 }
             ),
             "duration": forms.Select(attrs={"class": "form-control"}),
@@ -183,7 +182,21 @@ class NewBookingForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["date_time"].widget.attrs["min"] = datetime.now().strftime("%Y-%m-%dT%H:%M")
+        now = datetime.now()
+        
+        # Round 'now' to the next :00 or :30
+        minute = now.minute
+        if minute % 30 != 0:
+            # Move to the next :00 or :30
+            remainder = 30 - (minute % 30)
+            now += timedelta(minutes=remainder)
+            now = now.replace(second=0, microsecond=0)
+        else:
+            now = now.replace(second=0, microsecond=0)
+
+        # Set 'min' to the rounded current time
+        self.fields["date_time"].widget.attrs["min"] = now.strftime("%Y-%m-%dT%H:%M")
+        self.fields["date_time"].widget.attrs["step"] = "1800"  # 30 minutes = 1800 seconds
 
     def clean(self):
         """
@@ -221,18 +234,19 @@ class NewBookingForm(forms.ModelForm):
 
         return cleaned_data
     
-    def save(self):
-        """Create a new booking."""
+    def save(self, commit=True):
+        """Save the booking, either as a new or updated one."""
+        booking = super().save(commit=False)
 
-        super().save(commit=False)
-        booking = Booking.objects.create(
-            date_time=self.cleaned_data.get('date_time'),
-            duration=self.cleaned_data.get('duration'),
-            language=self.cleaned_data.get('language'),
-            tutor=self.cleaned_data.get('tutor'),
-            tutee=self.cleaned_data.get('tutee'),
-            price=self.cleaned_data.get('price')
-        )
+        # If the form is saving an existing booking, apply updates
+        if not self.instance.pk:
+            # It's a new booking, no need to apply custom logic before save
+            if commit:
+                booking.save()
+        else:
+            # Update the booking
+            if commit:
+                booking.save()
 
         return booking
 
@@ -240,45 +254,85 @@ class RequestForm(forms.ModelForm):
     """Form enabling tutees to submit a request related to a booking."""
 
     class Meta:
-        """Form options."""
         model = Request
-        fields = ['booking', 'request_type', 'frequency', 'details']
+        fields = ['booking', 'request_type', 'language', 'frequency', 'details'] 
         widgets = {
             'booking': forms.Select(attrs={'class': 'form-control'}),
-            'request_type': forms.Select(attrs={'class':'form-control'}),
+            'request_type': forms.Select(attrs={'class': 'form-control'}),
             'frequency': forms.Select(attrs={'class': 'form-control'}),
-            'details': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Provide additional details if needed', 'class': 'form-control'}),
+            'details': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Provide additional details if needed',
+                'class': 'form-control'
+            }),
+            'language': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'booking': 'Select Booking',
+            'booking': 'Select Booking or Request New Booking',
             'request_type': 'Request Type',
-            'frequency' : 'Frequency',
+            'frequency': 'Frequency',
             'details': 'Additional Details',
+            'language': 'Preferred Language',
         }
-        help_texts = {
-            'booking': 'Select the booking related to your request.',
-            'request_type': 'Select the type of request (e.g., Change or Cancel the booking).',
-            'frequency' : "Select how often this request should be repeated, if applicable.",
-            'details': 'Provide any relevant information about your request.',
-        }
-
-    def __init__(self, tutee, *args, **kwargs):
-        """Filter bookings for the logged-in tutee."""
+    
+    def __init__(self, tutee=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['booking'].queryset = Booking.objects.filter(tutee=tutee)
+        self.fields['booking'].required = False  # Allow the field to be blank (indicates new booking request)
+        self.fields['booking'].empty_label = "Request new Booking"
         self.fields['request_type'].empty_label = None
         self.fields['frequency'].empty_label = None
-    
-    def save(self, commit=True):
-        """Create and save the Request model, associating it with the tutee."""
-        # Create a new Request instance but do not save it yet
-        request_instance = super().save(commit=False)
 
-        # Set the tutee for the request
-        tutee = self.instance.booking.tutee  # Get the tutee from the booking
-        request_instance.tutee = tutee
+    def clean(self):
+        """Add custom validation for the form."""
+        cleaned_data = super().clean()
+        booking = cleaned_data.get("booking")
+        request_type = cleaned_data.get("request_type")
+        language = cleaned_data.get("language")
+        
+        # Validation: If no booking is selected, request type must be "New Booking"
+        if not booking and request_type != "New Booking":
+            self.add_error(
+                "request_type", 
+                "Request type must be 'New Booking' when no booking is selected."
+            )
+        
+        if not booking and language == "N/A":
+            self.add_error(
+                "language",
+                "Please select a language when making new booking request"
+            )
 
-        # Save the request instance
-        if commit:
-            request_instance.save()
-        return request_instance
+        # Validation: If a booking is selected, language must be "N/A"
+        if booking and language != "N/A":
+            self.add_error(
+                "language", 
+                "Language must be 'N/A' when a previous booking is selected."
+            )
+        
+        if booking and request_type =="New Booking":
+            self.add_error(
+                "request_type",
+                "Request type must be cancel/change for a chosen booking"
+            )
+
+        return cleaned_data
+        
+class InquiryForm(forms.ModelForm):
+    recipient = forms.ModelChoiceField(
+        queryset=User.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Recipient",
+    )
+
+    class Meta:
+        model = Inquiry
+        fields = ['message', 'recipient']
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user and not user.is_staff:
+            self.fields['recipient'].queryset = User.objects.filter(is_staff=True)
+            self.fields['recipient'].widget = forms.HiddenInput()

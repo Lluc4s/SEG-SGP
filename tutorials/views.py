@@ -9,9 +9,9 @@ from django.views import View
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, TutorSignUpForm, RequestForm, NewBookingForm
+from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, TutorSignUpForm, RequestForm, BookingForm, InquiryForm
 from tutorials.helpers import login_prohibited
-from .models import User, Booking, Tutor, Tutee, Request
+from .models import User, Booking, Tutor, Tutee, Request, Inquiry, Notification
 from django.http import HttpResponse
 from django.utils.timezone import now
 
@@ -52,19 +52,34 @@ def tutees(request):
 class NewBookingView(LoginRequiredMixin, FormView):
     """Display the new booking screen & handle create booking."""
 
-    form_class = NewBookingForm
+    form_class = BookingForm
     template_name = "new_booking.html"
 
     def form_valid(self, form):
         # Save the booking instance
         self.object = form.save()
-        messages.success(self.request, "Booking successfully created!")
 
+        # Create a notification for the tutor and tutee after the booking is created
+        tutor = self.object.tutor.user  # Access the tutor's user instance
+        tutee = self.object.tutee.user  # Access the tutee's user instance
+
+        # Send a notification to the tutor
+        Notification.objects.create(
+            user=tutor,
+            message=f"You have a new booking with {tutee.full_name()}.",
+        )
+
+        # Send a notification to the tutee
+        Notification.objects.create(
+            user=tutee,
+            message=f"You have a new booking with {tutor.full_name()}.",
+        )
+
+        messages.success(self.request, "Booking successfully created!")
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        url = f"{reverse('dashboard')}?status="
-        return url
+        return reverse('dashboard')
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'dashboard.html'
@@ -78,8 +93,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         status_filter = self.request.GET.get('status')
         tutor_filter = self.request.GET.get('tutor')
         tutee_filter = self.request.GET.get('tutee')
-
-        form = NewBookingForm()
 
         # Retrieve bookings based on user type
         if current_user.is_staff:
@@ -121,21 +134,68 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
         return context
 
-@login_required
+    def post(self, request, *args, **kwargs):
+        """Handle delete requests."""
+        booking_id = request.POST.get("delete_booking_id")
+        try:
+            booking = Booking.objects.get(id=booking_id)
+            booking.delete()
+            messages.success(request, "Booking deleted successfully.")
+        except Booking.DoesNotExist:
+            messages.error(request, "Booking not found.")
+
+        return self.get(request, *args, **kwargs)
+
+class EditBookingView(LoginRequiredMixin, UpdateView):
+    model = Booking
+    form_class = BookingForm
+    template_name = "edit_booking.html"  # Ensure you create this template
+
+    def get_object(self, queryset=None):
+        booking_id = self.kwargs.get('booking_id')  # Get booking_id from the URL
+        return get_object_or_404(Booking, id=booking_id)
+
+    def get_success_url(self):
+        """Return redirect URL after successful update."""
+        messages.add_message(self.request, messages.SUCCESS, "Booking updated!")
+        return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+        
 def requests(request):
     """Handle displaying the correct tab based on user input."""
     try:
         tutee = request.user.tutee_user  # Access the related Tutee object
     except Tutee.DoesNotExist:
         return render(request, 'error.html', {'message': 'You do not have a tutee profile.'})
-    
+
     if request.method == 'POST':
-        form = RequestForm(tutee=tutee, data=request.POST)  # Pass tutee into form
+        form = RequestForm(tutee=tutee, data=request.POST)
         if form.is_valid():
-            form.save()  # Save the request
-            return redirect('requests')  # Redirect to refresh
+            request_instance = form.save(commit=False)
+            request_instance.tutee = tutee  # Explicitly set the tutee field
+
+            # Check if "Make New Booking" is selected
+            if form.cleaned_data['booking'] == None:
+                # Create a dummy new booking
+                request_instance.booking = None  # Ensure no booking is linked
+            else:
+                request_instance.booking = form.cleaned_data['booking']  # Use the selected booking
+
+            # Save the request
+            req = request_instance.save()
+            
+            admins = User.objects.filter(is_staff=True)  # Retrieve all admins
+        
+            # Send a notification to each admin
+            for admin in admins:
+                Notification.objects.create(
+                    user=admin,
+                    message=f"{request_instance.request_type} request from {request.user.username}.",
+                )
+
+            messages.success(request, "Request successfully sent!")
+            return redirect('requests')  # Redirect to refresh the page
     else:
-        form = RequestForm(tutee=tutee)  # Initialize for GET request
+        form = RequestForm(tutee=tutee)
 
     # Fetch tutee's requests
     requests = Request.objects.filter(tutee=tutee)
@@ -148,6 +208,7 @@ def requests(request):
         'requests': requests,
         'tab': tab
     })
+
 
 @login_required
 def view_requests(request):
@@ -193,8 +254,14 @@ def change_request_status(request, request_id):
             req.status = new_status
             req.save()
 
+            # Notify recipient of status change
+            Notification.objects.create(
+                user=req.tutee.user,
+                message=f"Admin changed request submitted on {req.created_at.strftime('%Y-%m-%d %H:%M')} status to {req.status}.",
+            )
+
     # Redirect back to the requests page
-    return redirect('view_requests')  # Replace 'view_requests' with your admin request page name
+    return redirect('view_requests')
 
 @login_required
 def invoices(request):
@@ -369,3 +436,115 @@ class TutorSignUpView(LoginProhibitedMixin, FormView):
 
     def get_success_url(self):
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+
+@login_required
+def inbox(request):
+    tab = request.GET.get('tab', 'received')  # Default to 'received' tab
+
+    received_inquiries = Inquiry.objects.filter(recipient=request.user)
+    sent_inquiries = Inquiry.objects.filter(sender=request.user)
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+
+    # Mark notifications as read
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+
+    # Determine which tab to show based on the query parameter 'tab'
+    if tab == 'sent':
+        selected_inquiries = sent_inquiries
+    elif tab == 'notifications':
+        # You can add notification logic here if needed
+        selected_inquiries = []
+    else:
+        selected_inquiries = received_inquiries
+
+    return render(request, 'inbox.html', {
+        'received_inquiries': received_inquiries,
+        'sent_inquiries': sent_inquiries,
+        'notifications': notifications,  # Add notifications here if needed
+        'selected_inquiries': selected_inquiries,
+        'tab': tab,  # The currently selected tab
+    })
+    
+@login_required
+def send_inquiry(request):
+    if request.method == "POST":
+        form = InquiryForm(request.POST)
+        if form.is_valid():
+            inquiry = form.save(commit=False)
+            inquiry.sender = request.user
+
+            # If the user is not staff, send the inquiry to all admins (is_staff=True)
+            if not request.user.is_staff:
+                admins = User.objects.filter(is_staff=True)  # Retrieve all admins
+            
+                # Send a notification to each admin
+                for admin in admins:
+                    inquiry.recipient = admin
+                    inquiry.save()
+
+            # Create a notification for the recipient
+            Notification.objects.create(
+                user=inquiry.recipient,
+                message=f"You have a new inquiry from {inquiry.sender}.",
+            )
+
+            return redirect('inbox')
+    else:
+        form = InquiryForm()
+    
+    # Pass all users to the template if the user is staff
+    recipients = User.objects.all() if request.user.is_staff else None
+    return render(request, 'send_inquiry.html', {
+        'form': form,
+        'recipients': recipients,
+    })
+
+@login_required
+def respond_to_inquiry(request, inquiry_id):
+    """
+    Respond to an inquiry by adding a response and updating its status.
+    """
+    inquiry = Inquiry.objects.get(id=inquiry_id)
+
+    # Ensure only the recipient can respond
+    if inquiry.recipient != request.user:
+        return redirect('inbox')
+
+    if request.method == 'POST':
+        response = request.POST.get('response', '').strip()
+        if response:
+            inquiry.response = response
+            inquiry.status = "Responded"  # Update status
+            inquiry.save()
+
+            # Create a notification for the sender (inquiry creator)
+            Notification.objects.create(
+                user=inquiry.sender,
+                message=f"Your inquiry has been responded to by {request.user.username}.",
+            )
+
+            return redirect('inbox')
+
+    return render(request, 'respond_to_inquiry.html', {'inquiry': inquiry})
+
+@login_required
+def mark_notifications_as_read(request):
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return redirect('inbox')
+
+@login_required
+def delete_notification(request):
+    if request.method == "POST":
+        notification_id = request.POST.get('notification_id')
+        try:
+            notification = Notification.objects.get(id=notification_id, user=request.user)
+            notification.delete()
+        except Notification.DoesNotExist:
+            pass
+    return redirect('inbox')  # Adjust the redirect to your actual inbox view
+
+def unread_notifications_count(request):
+    if request.user.is_authenticated:
+        unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return {'unread_notifications_count': unread_count}
+    return {'unread_notifications_count': 0}

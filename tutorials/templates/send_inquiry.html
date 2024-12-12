@@ -1,0 +1,39 @@
+{% extends 'base_content.html' %}
+
+{% block title %}Send Inquiry{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Send Inquiry</h1>
+
+    <form method="POST" action="{% url 'send_inquiry' %}">
+        {% csrf_token %}
+
+        {% if user.is_staff %}
+        <!-- Recipient Input for Admin -->
+        <div class="form-group mb-3">
+            <label for="recipient" class="form-label">Recipient:</label>
+            {{ form.recipient }}
+        </div>
+        {% else %}
+        <!-- Message for non-staff users -->
+        <div class="form-group mb-3">
+            <div class="alert alert-info" style="background-color: var(--light-purple); color: var(--dark-purple); border-radius: 20px; text-align: center; padding: 10px; border: none;">
+                Inquiry will be sent to admin!
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Inquiry Field -->
+        <div class="form-group mb-3">
+            <label for="message" class="form-label">Inquiry:</label>
+            <textarea name="message" class="form-control" rows="6" placeholder="Write your inquiry here..." required>{{ form.message.value|default:'' }}</textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">Send Inquiry</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
