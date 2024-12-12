@@ -309,6 +309,12 @@ class RequestForm(forms.ModelForm):
                 "language", 
                 "Language must be 'N/A' when a previous booking is selected."
             )
+        
+        if booking and request_type =="New Booking":
+            self.add_error(
+                "request_type",
+                "Request type must be cancel/change for a chosen booking"
+            )
 
         return cleaned_data
         
