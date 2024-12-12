@@ -9,9 +9,9 @@ from django.views import View
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
-from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, TutorSignUpForm, RequestForm, BookingForm, InquiryForm
+from tutorials.forms import LogInForm, PasswordForm, UserForm, TuteeSignUpForm, TutorSignUpForm, NewBookingRequestForm, ChangeCancelBookingRequestForm, BookingForm, InquiryForm
 from tutorials.helpers import login_prohibited
-from .models import User, Booking, Tutor, Tutee, Request, Inquiry, Notification
+from .models import User, Booking, Tutor, Tutee, Request, NewBookingRequest, ChangeCancelBookingRequest, Inquiry, Notification
 from django.http import HttpResponse
 from django.utils.timezone import now
 
@@ -159,109 +159,189 @@ class EditBookingView(LoginRequiredMixin, UpdateView):
         """Return redirect URL after successful update."""
         messages.add_message(self.request, messages.SUCCESS, "Booking updated!")
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
-        
-def requests(request):
-    """Handle displaying the correct tab based on user input."""
-    try:
-        tutee = request.user.tutee_user  # Access the related Tutee object
-    except Tutee.DoesNotExist:
-        return render(request, 'error.html', {'message': 'You do not have a tutee profile.'})
-
-    if request.method == 'POST':
-        form = RequestForm(tutee=tutee, data=request.POST)
-        if form.is_valid():
-            request_instance = form.save(commit=False)
-            request_instance.tutee = tutee  # Explicitly set the tutee field
-
-            # Check if "Make New Booking" is selected
-            if form.cleaned_data['booking'] == None:
-                # Create a dummy new booking
-                request_instance.booking = None  # Ensure no booking is linked
-            else:
-                request_instance.booking = form.cleaned_data['booking']  # Use the selected booking
-
-            # Save the request
-            req = request_instance.save()
-            
-            admins = User.objects.filter(is_staff=True)  # Retrieve all admins
-        
-            # Send a notification to each admin
-            for admin in admins:
-                Notification.objects.create(
-                    user=admin,
-                    message=f"{request_instance.request_type} request from {request.user.username}.",
-                )
-
-            messages.success(request, "Request successfully sent!")
-            return redirect('requests')  # Redirect to refresh the page
-    else:
-        form = RequestForm(tutee=tutee)
-
-    # Fetch tutee's requests
-    requests = Request.objects.filter(tutee=tutee)
-
-    # Handle the tab switching logic
-    tab = request.GET.get('tab', 'make_request')
-
-    return render(request, 'requests.html', {
-        'form': form,
-        'requests': requests,
-        'tab': tab
-    })
-
-
-@login_required
-def view_requests(request):
-    """Handle displaying all requests for the admin with filtering options."""
-    # Ensure only admin users can access this functionality
-    if not request.user.is_staff:
-        return render(request, 'error.html', {'message': 'You do not have permission to view this page.'})
-
-    # Get the status filter from query parameters (default to 'All')
-    status_filter = request.GET.get('status', 'All')
-    timeliness_filter = request.GET.get('timeliness', 'All')
-
-    # Fetch requests based on the selected status filter
-    if status_filter == 'All':
-        requests_list = Request.objects.all()
-    else:
-        requests_list = Request.objects.filter(status=status_filter)
     
-    if timeliness_filter != 'All':
-        requests_list = requests_list.filter(timeliness=timeliness_filter)
+class RequestsView(LoginRequiredMixin, TemplateView):
+    template_name = 'requests.html'
 
-    return render(request, 'view_requests.html', {
-        'requests': requests_list,
-        'status_filter': status_filter,
-        'timeliness_filter': timeliness_filter,
-    })
+    def get_context_data(self, **kwargs):
+        """Add context data for GET requests."""
+        context = super().get_context_data(**kwargs)
 
-@login_required
-def change_request_status(request, request_id):
-    # Ensure only admin users can access this functionality
-    if not request.user.is_staff:
-        return HttpResponse('Unauthorized', status=403)
+        current_user = self.request.user
 
-    # Fetch the specific request
-    req = get_object_or_404(Request, id=request_id)
+        status_filter = self.request.GET.get('status')
+        tutee_filter = self.request.GET.get('tutee')
+        is_late_filter = self.request.GET.get('is_late')
 
-    if request.method == 'POST':
-        # Get the new status from the form submission
-        new_status = request.POST.get('status')
+        # Retrieve bookings based on user type
+        if current_user.is_staff:
+            requests = Request.objects.all()
+        else:
+            tutee = get_object_or_404(Tutee, user=current_user)
+            requests = Request.objects.filter(tutee=tutee)
 
-        # Validate the new status and update the request
-        if new_status in ['Pending', 'Approved', 'Rejected']:
-            req.status = new_status
-            req.save()
+        # Apply status filter
+        if status_filter:
+            requests = Request.objects.filter(status=status_filter)
 
-            # Notify recipient of status change
+        # Apply tutee name filter (case-insensitive search)
+        if tutee_filter:
+            requests = requests.filter(tutee__user__username=tutee_filter)
+
+        # Apply tutee name filter (case-insensitive search)
+        if is_late_filter == "Late":
+            requests = requests.filter(is_late=True)
+        elif is_late_filter == "On Time":
+            requests = requests.filter(is_late=False)
+        
+        # Add context variables
+        context['user'] = current_user
+        context['requests'] = requests
+        # Add distinct lists of tutors and tutees for the dropdowns
+        context['tutees'] = Tutee.objects.all()
+        # Filters
+        context['status_filter'] = status_filter
+        context['tutee_filter'] = tutee_filter
+        context['is_late_filter'] = is_late_filter
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Handle approve and delete requests."""
+        # Check if the request is to approve or delete
+        approve_request_id = request.POST.get("approve_request_id")
+        delete_request_id = request.POST.get("delete_request_id")
+
+        if approve_request_id:
+            return self.approve_request(request, approve_request_id)
+        elif delete_request_id:
+            return self.delete_request(request, delete_request_id)
+        else:
+            messages.error(request, "Invalid action.")
+            return self.get(request, *args, **kwargs)
+
+    def approve_request(self, request, request_id):
+        """Handle approving a request."""
+        try:
+            request_instance = Request.objects.get(id=request_id)
+            request_instance.status = "Approved"
+            request_instance.save()
+            messages.success(request, "Request approved successfully.")
+
+            # Notify the recipient of the status change
             Notification.objects.create(
-                user=req.tutee.user,
-                message=f"Admin changed request submitted on {req.created_at.strftime('%Y-%m-%d %H:%M')} status to {req.status}.",
+                user=request_instance.tutee.user,
+                message=f"Admin approved your {request_instance.request_type} request submitted on {request_instance.created_at.strftime('%Y-%m-%d %H:%M')}.",
+            )
+        except Request.DoesNotExist:
+            messages.error(request, "Request not found.")
+
+        return self.get(request)
+
+    def delete_request(self, request, request_id):
+        """Handle deleting a request."""
+        try:
+            request_instance = Request.objects.get(id=request_id)
+            request_instance.delete()
+            messages.success(request, "Request deleted successfully.")
+
+            # Notify the recipient of the deletion
+            Notification.objects.create(
+                user=request_instance.tutee.user,
+                message=f"Admin rejected and deleted your {request_instance.request_type} request submitted on {request_instance.created_at.strftime('%Y-%m-%d %H:%M')}.",
+            )
+        except Request.DoesNotExist:
+            messages.error(request, "Request not found.")
+
+        return self.get(request)
+    
+class RequestInfoView(LoginRequiredMixin, TemplateView):
+    template_name = 'request_info.html'
+
+    def get_context_data(self, **kwargs):
+        """Add context data for GET requests."""
+        context = super().get_context_data(**kwargs)
+
+        request_id = kwargs.get('request_id')
+        request_instance = get_object_or_404(Request, id=request_id)
+
+        # Add the base request instance to the context
+        context["request"] = request_instance
+
+        # Attempt to get related NewBookingRequest and ChangeCancelBookingRequest
+        try:
+            context["new_booking_request"] = NewBookingRequest.objects.get(request=request_instance)
+        except NewBookingRequest.DoesNotExist:
+            context["new_booking_request"] = None
+
+        try:
+            context["change_cancel_request"] = ChangeCancelBookingRequest.objects.get(request=request_instance)
+        except ChangeCancelBookingRequest.DoesNotExist:
+            context["change_cancel_request"] = None
+
+        return context
+    
+class NewBookingRequestView(LoginRequiredMixin, FormView):
+    """Display the new request screen & handle create request."""
+
+    form_class = NewBookingRequestForm
+    template_name = "new_booking_request.html"
+
+    def form_valid(self, form):
+        # Assign the tutee to the request before saving
+        form.instance.tutee = self.request.user.tutee_user
+
+        # Save the booking instance
+        self.object = form.save()
+
+        admins = User.objects.filter(is_staff=True)  # Retrieve all admins
+        
+        # Send a notification to each admin
+        for admin in admins:
+            Notification.objects.create(
+                user=admin,
+                message=f"{self.object.request.request_type} request from {self.object.request.tutee}.",
             )
 
-    # Redirect back to the requests page
-    return redirect('view_requests')
+        messages.success(self.request, "New Booking Request successfully created!")
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse('requests')
+    
+class ChangeCancelBookingRequestView(LoginRequiredMixin, FormView):
+    """Display the change/cancel request screen & handle create request."""
+
+    form_class = ChangeCancelBookingRequestForm
+    template_name = "change_cancel_booking_request.html"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Pass the tutee object to the form
+        kwargs['tutee'] = self.request.user.tutee_user
+        return kwargs
+
+    def form_valid(self, form):
+        # Assign the tutee to the request before saving
+        form.instance.tutee = self.request.user.tutee_user
+
+        # Save the booking instance
+        self.object = form.save()
+
+        admins = User.objects.filter(is_staff=True)  # Retrieve all admins
+        
+        # Send a notification to each admin
+        for admin in admins:
+            Notification.objects.create(
+                user=admin,
+                message=f"{self.object.change_or_cancel} request from {self.object.request.tutee}.",
+            )
+
+        messages.success(self.request, "Change/Cancel Request successfully created!")
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse('requests')
 
 @login_required
 def invoices(request):

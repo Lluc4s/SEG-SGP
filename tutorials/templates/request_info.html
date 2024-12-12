@@ -1,0 +1,25 @@
+{% extends 'base_content.html' %}
+{% block content %}
+    <div class="container">
+        <h1 class="mb-4">Request Info</h1>
+        <p><strong>ID:</strong> {{ request.id }}</p>
+        <p><strong>Tutee:</strong> {{ request.tutee.user.get_full_name }}</p>
+        <p><strong>Status:</strong> {{ request.status }}</p>
+        <p><strong>Created At:</strong> {{ request.created_at }}</p>
+        <p><strong>Is Late:</strong> {{ request.is_late }}</p>
+        {% if new_booking_request is not None %}
+        <p><strong>Frequency:</strong> {{ new_booking_request.frequency }}</p>
+        <p><strong>Duration:</strong> {{ new_booking_request.duration }}</p>
+        <p><strong>Language:</strong> {{ new_booking_request.language }}</p>
+        <p><strong>Details:</strong> {{ new_booking_request.details }}</p>
+        {% endif %}
+        {% if change_cancel_request is not None %}
+        <p><strong>Type:</strong> {{ change_cancel_request.change_or_cancel }}</p>
+        <p><strong>Duration:</strong> {{ change_cancel_request.booking }}</p>
+        <p><strong>Details:</strong> {{ change_cancel_request.details }}</p>
+        {% endif %}
+        <a type="button" class="btn btn-danger d-inline-block px-3 rounded-pill w-100 mt-3" href="{% url 'requests' %}">
+            Back
+        </a>
+    </div>
+{% endblock %}

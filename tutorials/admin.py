@@ -112,13 +112,13 @@ class RequestAdmin(admin.ModelAdmin):
     """Admin customization for Request model."""
 
     # Fields to display in the admin list view
-    list_display = ('tutee', 'booking', 'request_type', 'frequency', 'status', 'created_at', 'timeliness')
+    list_display = ('tutee', 'request_type', 'status', 'created_at', 'is_late')
 
     # Fields to filter by in the admin
-    list_filter = ('status', 'request_type', 'tutee', 'booking')
+    list_filter = ('status', 'request_type', 'tutee')
 
     # Fields to search for in the admin
-    search_fields = ('tutee__user__username', 'booking__tutor__user__username', 'request_type')
+    search_fields = ('tutee__user__username', 'request_type')
 
     # Ordering in the admin list view
     ordering = ('-created_at',)
@@ -126,7 +126,7 @@ class RequestAdmin(admin.ModelAdmin):
     # Customize form fields displayed in the admin
     fieldsets = (
         (None, {
-            'fields': ('tutee', 'booking', 'request_type', 'frequency', 'details', 'status'),
+            'fields': ('tutee', 'request_type', 'status'),
         }),
         ('Important Dates', {
             'fields': ('created_at',),

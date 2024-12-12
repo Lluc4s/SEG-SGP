@@ -118,130 +118,50 @@ class Booking(models.Model):
 
 class Request(models.Model):
     REQUEST_CHOICES = [
-        ("Change", "Change Booking"),
-        ("Cancel", "Cancel Booking"),
+        ("Change/Cancel", "Change/Cancel Booking"),
         ("New Booking", "New Booking"),
-    ]
-
-    FREQUENCY_CHOICES = [
-        ("One-time", "One-time"),
-        ("Weekly", "Weekly"),
-        ("Bi-weekly", "Bi-weekly"),
-        ("Monthly", "Monthly"),
-    ]
-
-    TIMELINESS_CHOICES = [
-        ("On Time", "On Time"),
-        ("Delayed", "Delayed"),
-    ]
-
-    LANGUAGE_CHOICES = [
-        ("N/A", "N/A"),
-        ("C++", "C++"),
-        ("Python", "Python"),
-        ("Java", "Java"),
-        ("Javascript", "Javascript"),
-        ("R", "R"),
-        ("SQL", "SQL"),
     ]
 
     tutee = models.ForeignKey(
         Tutee,
         on_delete=models.CASCADE,
-        related_name="requests",
         help_text="The tutee making the request.",
-        default=""
     )
-    booking = models.ForeignKey(
-        Booking,
-        on_delete=models.CASCADE,
-        related_name="requests",
-        help_text="Select booking related to the request or request new booking.",
-        null = True,
-        default=None
-    )
+    
     request_type = models.CharField(
         max_length=15,
         choices=REQUEST_CHOICES,
         help_text="Type of request (e.g., change, cancel or request new booking).",
-        default="New Booking"
-    )
-    frequency = models.CharField(
-        max_length=15,
-        choices=FREQUENCY_CHOICES,
-        help_text="How often the request should recur.",
-        default="One-time"
     )
 
-    language = models.CharField(
-        max_length=15,
-        choices=LANGUAGE_CHOICES,
-        help_text="Select language related to request if applicable",
-        default="N/A"
-    )
-
-    details = models.TextField(
-        blank=True,
-        help_text="Optional details or comments about the request."
-    )
     created_at = models.DateTimeField(default=timezone.now)
     status = models.CharField(
         max_length=10,
         choices=[
             ("Pending", "Pending"),
             ("Approved", "Approved"),
-            ("Rejected", "Rejected"),
         ],
         default="Pending",
         help_text="Current status of the request.",
     )
-    timeliness = models.CharField(
-        max_length=10,
-        choices=TIMELINESS_CHOICES,
-        default="On Time",
-        help_text="Whether the request is On Time or Delayed.",
-    )
+    is_late = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-created_at"]
 
-    def get_term_and_start_date(self, booking_date):
+    def get_term_start_date(self):
         """Return the term and the start date of the term based on the booking date."""
         # Define the start dates for each term
-        if booking_date.month in [9, 10, 11, 12]:
-            term_start_date = date(booking_date.year, 9, 1)  # September-Christmas term starts September 1st
-            term = "September-Christmas"
-        elif booking_date.month in [1, 2, 3, 4]:
-            term_start_date = date(booking_date.year, 1, 1)  # January-Easter term starts January 1st
-            term = "January-Easter"
-        elif booking_date.month in [5, 6, 7]:
-            term_start_date = date(booking_date.year, 5, 1)  # May-July term starts May 1st
-            term = "May-July"
+        if self.created_at.month in [9, 10, 11, 12]:
+            term_start_date = date(self.created_at.year, 9, 1)  # September-Christmas term starts September 1st
+        elif self.created_at.month in [1, 2, 3, 4]:
+            term_start_date = date(self.created_at.year, 1, 1)  # January-Easter term starts January 1st
+        elif self.created_at.month in [5, 6, 7]:
+            term_start_date = date(self.created_at.year, 5, 1)  # May-July term starts May 1st
         else:
             term_start_date = None
-            term = "Unknown"
         
         return term_start_date
-
-    def save(self, *args, **kwargs):
-        # Get the term and start date for the booking
-        if self.booking:
-            term_start_date = self.get_term_and_start_date(self.booking.date_time.date())
-        else:
-            term_start_date = self.get_term_and_start_date(self.created_at)
-
-        if term_start_date:
-            # Calculate the deadline for submitting requests (2 weeks before the term starts)
-            deadline = term_start_date - timedelta(weeks=2)
-
-            # Determine if the request is timely
-            if self.created_at.date() >= deadline:
-                self.timeliness = "Delayed"
-            else:
-                self.timeliness = "On Time"
-
-        # Save the request
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.tutee.user.full_name()} - {self.request_type} - {self.status}"
@@ -252,22 +172,68 @@ class Request(models.Model):
         else:
             return f"New Booking Request: {self.language}"
         
-# @receiver(post_save,sender=User)
-# def user_create(sender,instance,created,**kwargs):
-#     if created:
-#         if not instance.is_staff:
-#             if instance.is_tutor:
-#                 # Tutor.objects.create(user=instance)
-#             else:
-#                 Tutee.objects.create(user=instance)
+class NewBookingRequest(models.Model):
+    FREQUENCY_CHOICES = [
+        ("One-time", "One-time"),
+        ("Weekly", "Weekly"),
+        ("Bi-weekly", "Bi-weekly"),
+        ("Monthly", "Monthly"),
+    ]
 
-# @receiver(post_save,sender=User)
-# def user_save(sender,instance,**kwargs):
-#     if not instance.is_staff:
-#         if instance.is_tutor:
-#             instance.tutor_user.save()
-#         else:
-#             instance.tutee_user.save()
+    request = models.OneToOneField(
+        Request,
+        on_delete=models.CASCADE,
+        related_name="new_booking_request"
+    )
+
+    frequency = models.CharField(
+        max_length=15,
+        choices=FREQUENCY_CHOICES,
+        help_text="How often the request should recur.",
+        default="One-time"
+    )
+
+    duration = models.DurationField(
+        choices = settings.DURATION_CHOICES,
+    )
+
+    language = models.CharField(
+        max_length=15,
+        choices= settings.LANGUAGE_CHOICES,
+        help_text="Select language related to request if applicable",
+    )
+
+    details = models.TextField(
+        blank=True,
+        help_text="Optional details or comments about the request."
+    )
+
+class ChangeCancelBookingRequest(models.Model):
+    request = models.OneToOneField(
+        Request,
+        on_delete=models.CASCADE,
+        related_name="change_cancel_booking_request"
+    )
+
+    change_or_cancel = models.CharField(
+        max_length=8,
+        choices=[
+            ("Change", "Change"),
+            ("Cancel", "Cancel"),
+        ],
+        default="Cancel"
+    )
+
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        help_text="Select booking related to the request or request new booking.",
+    )
+
+    details = models.TextField(
+        blank=True,
+        help_text="Optional details or comments about the request."
+    )
 
 class Inquiry(models.Model):
     # Inquiry fields

@@ -1,103 +1,115 @@
 {% extends 'base_content.html' %}
 {% block content %}
 <div class="w-100 d-flex flex-column">
-  <h1 class="mb-4">Requests</h1>
+  <div class="w-100 mb-4 d-flex justify-content-between align-items-center">
+    <h1>Requests</h1>
 
-  <!-- Tabs for Make a Request and View Requests -->
-  <div class="filter-labels">
-    <a href="?tab=make_request" class="filter-label {% if request.GET.tab == 'make_request' or not request.GET.tab %}active{% endif %}">
-        Make a Request
-    </a>
-    <a href="?tab=view_requests" class="filter-label {% if request.GET.tab == 'view_requests' %}active{% endif %}">
-        View Requests
-    </a>
-  </div>
-
-  <hr class="filter-separator">
-
-  <!-- Display Make a Request Form or View Requests Table based on the selected tab -->
-  {% if request.GET.tab == 'make_request' or not request.GET.tab %}
-    <!-- Form for submitting a request (default behavior if no tab is selected) -->
-    <form method="POST">
-      {% csrf_token %}
-      {% include 'partials/bootstrap_form.html' with form=form %}
-      <button type="submit" class="btn btn-primary">Submit Request</button>
-    </form>
-  {% elif request.GET.tab == 'view_requests' %}
-    <!-- Check if the user is an admin or a tutee -->
-    {% if user.is_staff %}
-      <!-- Table of all requests for admins -->
-      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th>Tutee</th>
-              <th>Booking</th>
-              <th>Request Type</th>
-              <th>Frequency</th>
-              <th>Status</th>
-              <th>Date Submitted</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for request in requests %}
-            <tr>
-              <td>{{ request.tutee.user.first_name }} {{ request.tutee.user.last_name }}</td>
-              <td>{{ request.booking }}</td>
-              <td>{{ request.request_type }}</td>
-              <td>{{ request.frequency }}</td>
-              <td>
-                {% if request.status == 'Pending' %}Pending
-                {% elif request.status == 'Approved' %}Approved
-                {% else %}Rejected
-                {% endif %}
-              </td>
-              <td>{{ request.created_at }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="6">No requests available.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <!-- Table of only the tutee's requests -->
-      <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th>Booking</th>
-              <th>Request Type</th>
-              <th>Frequency</th>
-              <th>Status</th>
-              <th>Date Submitted</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for request in requests %}
-            <tr>
-              <td>{{ request.get_booking_display }}</td>
-              <td>{{ request.request_type }}</td>
-              <td>{{ request.frequency }}</td>
-              <td>
-                {% if request.status == 'Pending' %}Pending
-                {% elif request.status == 'Approved' %}Approved
-                {% else %}Rejected
-                {% endif %}
-              </td>
-              <td>{{ request.created_at }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="5">You have no previous requests.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+    {% if not user.is_staff %}
+    <div>
+        <a type="button" class="btn btn-secondary d-inline-block px-3 rounded-pill" href="{% url 'new_booking_request' %}">
+            <i class="bi bi-plus-circle me-2"></i>
+            New
+        </a>
+        <a type="button" class="btn btn-secondary d-inline-block px-3 rounded-pill" href="{% url 'change_cancel_booking_request' %}">
+            <i class="bi bi-vector-pen me-2"></i>
+            Change/Cancel
+        </a>
+    </div>
     {% endif %}
-  {% endif %}
+  </div>
+  <div class="filter-labels">
+    <form method="get" class="d-flex gap-3 mb-4 ">
+      <!-- Status Dropdown -->
+      <div>
+        <label for="status" class="form-label">Status:</label>
+        <select name="status" id="status" class="form-select w-auto">
+            <option value="" {% if status_filter == '' %}selected{% endif %}>All</option>
+            <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+            <option value="Approved" {% if status_filter == 'Approved' %}selected{% endif %}>Approved</option>
+        </select>
+      </div> 
+      
+      <!-- Tutee Name Dropdown (visible only if the user is admin) -->
+      {% if user.is_staff %}
+      <div>
+        <label for="tutee" class="form-label">Tutee:</label>
+        <select name="tutee" id="tutee" class="form-select w-auto">
+            <option value="" {% if tutee_filter == '' %}selected{% endif %}>All</option>
+            {% for tutee in tutees %}
+            <option value="{{ tutee.user.username }}" {% if tutee_filter == tutee.user.username %}selected{% endif %}>
+                {{ tutee.user }}
+            </option>
+            {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="is_late" class="form-label">Timing:</label>
+        <select name="is_late" id="is_late" class="form-select w-auto">
+            <option value="" {% if is_late_filter == '' %}selected{% endif %}>All</option>
+            <option value="On Time" {% if is_late_filter == 'On Time' %}selected{% endif %}>On Time</option>
+            <option value="Delayed" {% if is_late_filter == 'Late' %}selected{% endif %}>Late</option>
+        </select>
+      </div>
+      {% endif %}
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary mt-auto">Filter</button>
+    </form>
+  </div>
+  <hr class="filter-separator">
+  <div>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+            <th>Date Submitted</th>
+            <th>Tutee</th>
+            <th>Request Type</th>
+            <th>Status</th>
+            <th>Timing</th>
+            <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for request in requests %}
+        <tr>
+            {% load tz %}
+            <td>{{ request.created_at|localtime|date:"m/d/Y g:i a" }}</td>
+            <td>{{ request.tutee.user.full_name }}</td>
+            <td>{{ request.request_type }}</td>
+            <td>{{ request.status }}</td>
+            <td class="{% if request.is_late %}text-danger{% else %}text-success{% endif %}">{% if request.is_late %}Late{% else %}On Time{% endif %}</td>
+            <td>
+                <!-- View Button -->
+                <a href="/requests/{{ request.id }}" class="btn btn-sm btn-secondary me-2 py-0 px-3 rounded-pill">
+                    <i class="bi bi-eye"></i> View
+                </a>
+                {% if user.is_staff %}
+                <!-- Approve Button -->
+                <form method="post" action="" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="approve_request_id" value="{{ request.id }}">
+                    <button type="submit" class="btn btn-sm btn-success py-0 px-3 rounded-pill" onclick="return confirm('Are you sure you want to approve this request?');">
+                    <i class="bi bi-check-circle"></i> Approve
+                    </button>
+                </form>
+                <!-- Reject/Delete Button -->
+                <form method="post" action="" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="delete_request_id" value="{{ request.id }}">
+                    <button type="submit" class="btn btn-sm btn-danger py-0 px-3 rounded-pill" onclick="return confirm('Are you sure you want to reject & delete this request?');">
+                    <i class="bi bi-x-circle"></i> Reject
+                    </button>
+                </form>
+                {% endif %}
+            </td>
+            
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9">No requests available.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}
