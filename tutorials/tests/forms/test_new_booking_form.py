@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.utils import timezone
-from tutorials.forms import BookingForm
+from tutorials.forms import BookingForm, ValidationError
 from tutorials.models import Booking, Tutor, Tutee, User
 from datetime import timedelta
 
@@ -168,3 +168,11 @@ class NewBookingFormTestCase(TestCase):
         invalid_data['date_time'] = "Invalid Date Time"
         form = BookingForm(data=invalid_data)
         self.assertFalse(form.is_valid())
+    
+    def test_form_cannot_save_for_no_date_time(self):
+        invalid_data = self.valid_form_data.copy()
+        invalid_data['date_time'] = None
+        form = BookingForm(data=invalid_data)
+        with self.assertRaises(ValueError):
+            form.save()
+        
