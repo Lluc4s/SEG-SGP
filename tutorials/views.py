@@ -15,6 +15,7 @@ from .models import User, Booking, Tutor, Tutee, Request, NewBookingRequest, Cha
 from django.http import HttpResponse
 from django.utils.timezone import now
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from urllib.parse import urlencode
 
 @login_required
 def tutors(request):
@@ -35,7 +36,14 @@ def tutors(request):
     paginator = Paginator(tutors_list, 10) 
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'tutors.html', {'page_obj': page_obj})
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    query_string = urlencode(query_params)
+
+    return render(request, 'tutors.html', {
+        'page_obj': page_obj,
+        'query_string': query_string,  # Pass the modified query string
+    })
 
 @login_required
 def tutees(request):
@@ -56,7 +64,15 @@ def tutees(request):
     paginator = Paginator(tutees_list, 10) 
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'tutees.html', {'page_obj': page_obj})
+    # Prepare query parameters excluding 'page'
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    query_string = urlencode(query_params)
+
+    return render(request, 'tutees.html', {
+        'page_obj': page_obj,
+        'query_string': query_string,  # Pass the modified query string
+    })
 
 class NewBookingView(LoginRequiredMixin, FormView):
     """Display the new booking screen & handle create booking."""
@@ -184,51 +200,50 @@ class RequestsView(LoginRequiredMixin, TemplateView):
     template_name = 'requests.html'
 
     def get_context_data(self, **kwargs):
-        """Add context data for GET requests."""
         context = super().get_context_data(**kwargs)
 
         current_user = self.request.user
-
         status_filter = self.request.GET.get('status')
         tutee_filter = self.request.GET.get('tutee')
         is_late_filter = self.request.GET.get('is_late')
 
-        # Retrieve bookings based on user type
+        # Retrieve requests based on user type
         if current_user.is_staff:
             requests = Request.objects.all()
         else:
             tutee = get_object_or_404(Tutee, user=current_user)
             requests = Request.objects.filter(tutee=tutee)
 
-        # Apply status filter
+        # Apply filters
         if status_filter:
-            requests = Request.objects.filter(status=status_filter)
-
-        # Apply tutee name filter (case-insensitive search)
+            requests = requests.filter(status=status_filter)
         if tutee_filter:
             requests = requests.filter(tutee__user__username=tutee_filter)
-
-        # Apply tutee name filter (case-insensitive search)
         if is_late_filter == "Late":
             requests = requests.filter(is_late=True)
         elif is_late_filter == "On Time":
             requests = requests.filter(is_late=False)
-        
-        paginator = Paginator(requests, 4)  # Display 10 requests per page
+
+        paginator = Paginator(requests, 4)
         page_number = self.request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
+
+        # Prepare query parameters without 'page'
+        query_params = self.request.GET.copy()
+        if 'page' in query_params:
+            query_params.pop('page')
 
         # Add context variables
         context['user'] = current_user
         context['requests'] = requests
-        # Add distinct lists of tutors and tutees for the dropdowns
         context['tutees'] = Tutee.objects.all()
-        # Filters
         context['status_filter'] = status_filter
         context['tutee_filter'] = tutee_filter
         context['is_late_filter'] = is_late_filter
         context['page_obj'] = page_obj
+        context['query_params'] = query_params.urlencode()  # Encode query params for URL
         return context
+
 
     def post(self, request, *args, **kwargs):
         """Handle approve and delete requests."""
@@ -392,6 +407,8 @@ def invoices(request):
         bookings = bookings.filter(is_paid=True)
     elif status_filter == "Pending":
         bookings = bookings.filter(is_paid=False)
+
+        
     
     paginator = Paginator(bookings, 6) 
     page_number = request.GET.get('page')
@@ -403,10 +420,16 @@ def invoices(request):
         booking.save()
         return redirect('invoices')
 
-    return render (request, 'invoices.html', {
+    # Prepare query parameters without 'page'
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        query_params.pop('page')
+    
+    return render(request, 'invoices.html', {
         "page_obj": page_obj,
         "total": total,
         "status_filter": status_filter,
+        "query_params": query_params.urlencode(),
     })
     
 class LoginProhibitedMixin:

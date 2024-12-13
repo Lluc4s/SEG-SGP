@@ -114,7 +114,9 @@
       <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
         <li class="page-item">
-          <a class="page-link previous-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Previous</a>
+          <a class="page-link previous-link" href="?page={{ page_obj.previous_page_number }}&{{ query_params }}">
+            &laquo; Previous
+          </a>
         </li>
         {% endif %}
         
@@ -124,10 +126,13 @@
         
         {% if page_obj.has_next %}
         <li class="page-item">
-          <a class="page-link next-link" href="?page={{ page_obj.next_page_number }}">Next &raquo;</a>
+          <a class="page-link next-link" href="?page={{ page_obj.next_page_number }}&{{ query_params }}">
+            Next &raquo;
+          </a>
         </li>
         {% endif %}
       </ul>
     </nav>
+    
   </div>
 {% endblock %}
