@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand, CommandError
 from tutorials.models import User, Tutor, Tutee, Booking, Request, NewBookingRequest, Inquiry
 import pytz
 from faker import Faker
-from random import randint, random, choice
+from random import randint, random, choice, sample
 from datetime import timedelta, datetime
 from django.conf import settings
 from django.utils.timezone import make_aware, now
@@ -15,21 +15,12 @@ user_fixtures = [
     {'username': '@charlie', 'email': 'charlie.johnson@example.org', 'first_name': 'Charlie', 'last_name': 'Johnson',  'is_superuser': False, 'is_staff': False, 'is_tutor': False},
 ]
 
-languages_specialised = [
-    ('C++'),
-    ('Python'),
-    ('Java'),
-    ('JavaScript'),
-    ('R'),
-    ('SQL'),
-    ('Ruby'),
-    ('React'),
-    ('Tensorflow')
-]
 class Command(BaseCommand):
     """Build automation command to seed the database."""
 
-    USER_COUNT = 300
+    TUTEE_COUNT = 200
+    TUTOR_COUNT = 100
+    ADMIN_COUNT = 10
     TUTORS_RATIO = 0.3
     BOOKINGS_PER_TUTOR = 3
     REQUESTS_COUNT = 50
@@ -64,44 +55,55 @@ class Command(BaseCommand):
             self.try_create_user(data)
 
     def generate_random_users(self):
-        user_count = User.objects.count()
-        while  user_count < self.USER_COUNT:
-            print(f"Seeding user {user_count}/{self.USER_COUNT}", end='\r')
-            self.generate_user()
-            user_count = User.objects.count()
-        print("User seeding complete.      ")
+        for tutee_count in range(self.TUTEE_COUNT):
+            print(f"Seeding tutee {tutee_count+1}/{self.TUTEE_COUNT}", end='\r')
+            self.generate_user("tutee")
 
-    def generate_user(self):
+        for tutor_count in range(self.TUTOR_COUNT):
+            print(f"Seeding tutor {tutor_count+1}/{self.TUTOR_COUNT}", end='\r')
+            self.generate_user("tutor")
+
+        for admin_count in range(self.ADMIN_COUNT):
+            print(f"Seeding admin {admin_count+1}/{self.ADMIN_COUNT}", end='\r')
+            self.generate_user("admin")
+
+        print("User seeding complete.")
+
+    def generate_user(self, user_type):
         first_name = self.faker.first_name()
         last_name = self.faker.unique.last_name()
         email = create_email(first_name, last_name)
         username = create_username(first_name, last_name)
-        is_tutor = choice([True, False]) if len(Tutor.objects.all()) / self.USER_COUNT < self.TUTORS_RATIO else False
+        languages_specialised = None
 
-        self.stdout.write(f"Creating user: {username}, Tutor: {is_tutor}")
+        if user_type == "admin":
+            is_superuser = True
+            is_staff = True
+            is_tutor = False
+        elif user_type == "tutor":
+            is_superuser = False
+            is_staff = False
+            is_tutor = True
+            languages_specialised = get_random_languages()
+        elif user_type == "tutee":
+            is_superuser = False
+            is_staff = False
+            is_tutor = False
         
         self.try_create_user({'username': username, 
                               'email': email, 
                               'first_name': first_name,
                             'last_name': last_name, 
-                            'is_superuser':False, 
-                            'is_staff':False, 
+                            'is_superuser':is_superuser, 
+                            'is_staff':is_staff, 
                             'is_tutor':is_tutor, 
                             'languages_specialised':languages_specialised}
                             )
        
     def try_create_user(self, data):
         try:
-            # if User.objects.filter(email=data['email']).exists():
-            #     self.stdout.write(f"Skipping user with duplicate email: {data['email']}")
-            #     return
             self.create_user(data)
         except Exception as e:
-            # if "UNIQUE constraint failed" in str(e):
-            #     self.stdout.write(f"Duplicate email detected for {data['email']}. Retrying...")
-            #     data['email'] = f"{data['email'].split('@')[0]}{randint(1000, 9999)}@example.org"  # Regenerate email
-            #     self.try_create_user(data)  # Retry with a new email
-            # else:
             self.stdout.write(f"Error creating user {data['username']}: {e}")
 
     def create_user(self, data):
@@ -125,13 +127,8 @@ class Command(BaseCommand):
             Tutee.objects.create(user=user)
 
     def create_bookings(self):
-        """Create sample bookings."""
         tutors = Tutor.objects.all()
         tutees = Tutee.objects.all()
-
-        if not tutors or not tutees:
-            self.stdout.write("No tutors or tutees available. Skipping bookings creation.")
-            return
 
         for tutor in tutors:
             for _ in range(self.BOOKINGS_PER_TUTOR):
@@ -157,12 +154,6 @@ class Command(BaseCommand):
 
     def create_requests(self):
         """Generate requests and new booking requests."""
-  
-        tutees = Tutee.objects.all()
-        if not tutees.exists():
-            self.stdout.write("No Tutees found. Create Tutees first.")
-            return
-
 
         request_types = ["Change/Cancel", "New Booking"]
         statuses = ["Pending", "Approved"]
@@ -304,4 +295,16 @@ def create_username(first_name, last_name):
 
 def create_email(first_name, last_name):
     return first_name + '.' + last_name +'@example.org'
-#str(randint(1, 1000))
+
+def get_random_languages():
+    # Extract the first element of each tuple (e.g., the language code)
+    languages = [choice[0] for choice in settings.LANGUAGE_CHOICES]
+    
+    # Random number of languages (1 to len(languages))
+    count = randint(1, len(languages))
+    
+    # Randomly select 'count' languages
+    random_languages = sample(languages, count)
+    
+    return random_languages
+
