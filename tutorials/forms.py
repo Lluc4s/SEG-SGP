@@ -114,6 +114,21 @@ class TuteeSignUpForm(NewPasswordMixin, forms.ModelForm):
         Tutee.objects.create(user=user)
 
         return user
+    
+    def clean(self):
+        super().clean()
+
+        first_name = self.cleaned_data.get('first_name')
+        if first_name and not first_name.isalpha(): 
+            self.add_error('first_name', "First name must contain only alphabetic characters.")
+
+        last_name = self.cleaned_data.get('last_name')
+        if last_name and not last_name.isalpha():
+            self.add_error('last_name', "Last name must contain only alphabetic characters.")
+
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email__iexact=email).exists():
+            self.add_error('email', "This email is already in use")
 
 class TutorSignUpForm(NewPasswordMixin, forms.ModelForm):
     """Form enabling unregistered users to sign up as tutor."""
@@ -152,6 +167,21 @@ class TutorSignUpForm(NewPasswordMixin, forms.ModelForm):
         )
 
         return user
+    
+    def clean(self):
+        super().clean()
+
+        first_name = self.cleaned_data.get('first_name')
+        if first_name and not first_name.isalpha(): 
+            self.add_error('first_name', "First name must contain only alphabetic characters.")
+
+        last_name = self.cleaned_data.get('last_name')
+        if last_name and not last_name.isalpha():
+            self.add_error('last_name', "Last name must contain only alphabetic characters.")
+        
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email__iexact=email).exists():
+            self.add_error('email', "This email is already in use")
 
 class BookingForm(forms.ModelForm):
     """
@@ -345,8 +375,8 @@ class ChangeCancelBookingRequestForm(forms.ModelForm):
     def __init__(self, tutee=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if tutee:
-            # Filter bookings based on the tutee
-            queryset = Booking.objects.filter(tutee=tutee)
+            # Filter bookings based on the tutee and bookings not completed
+            queryset = Booking.objects.filter(tutee=tutee, is_completed=False)
             self.fields['booking'].queryset = queryset
 
             # Check if queryset is empty and update empty_label accordingly
