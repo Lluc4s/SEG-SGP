@@ -171,7 +171,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        """Handle delete requests."""
         booking_id = request.POST.get("delete_booking_id")
         try:
             booking = Booking.objects.get(id=booking_id)
@@ -179,8 +178,12 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             messages.success(request, "Booking deleted successfully.")
         except Booking.DoesNotExist:
             messages.error(request, "Booking not found.")
+            # Return the dashboard page without redirecting
+            context = self.get_context_data(**kwargs)
+            return self.render_to_response(context)
 
-        return self.get(request, *args, **kwargs)
+        return redirect(reverse('dashboard'))
+
 
 class EditBookingView(LoginRequiredMixin, UpdateView):
     model = Booking
