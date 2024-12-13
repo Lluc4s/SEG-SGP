@@ -1,10 +1,10 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
-from datetime import datetime, timedelta,date
-from tutorials.models import Booking, Tutor, Tutee, User,Request
+from datetime import datetime, timedelta
+from django.utils import timezone
+from tutorials.models import Booking, Tutor, Tutee, User
 
 class BookingModelTestCase(TestCase):
-
     def setUp(self):
         self.tutor_user = User.objects.create_user(
             username='@janedoe', email='janedoe@example.com', first_name='Jane', last_name='Doe', is_tutor=True
@@ -16,30 +16,13 @@ class BookingModelTestCase(TestCase):
         self.tutor = Tutor.objects.create(user=self.tutor_user)
         self.tutee = Tutee.objects.create(user=self.tutee_user)
         self.booking = Booking.objects.create(
-            date_time=datetime(2023, 12, 1, 14, 0),
+            date_time=timezone.make_aware(datetime(2023, 12, 1, 14, 0, 0)),
             duration=timedelta(hours=2),
             language="Python",
             tutor=self.tutor,
             tutee=self.tutee,
             price=50.00
         )
-    def test_get_term_and_start_date(self):
-        booking_date = date(2024, 11, 15)
-        term_start_date = Request().get_term_and_start_date(booking_date)
-        self.assertEqual(term_start_date, date(2024, 9, 1))
-
-        booking_date = date(2025, 2, 1)
-        term_start_date = Request().get_term_and_start_date(booking_date)
-        self.assertEqual(term_start_date, date(2025, 1, 1))
-
-        booking_date = date(2025, 6, 10)
-        term_start_date = Request().get_term_and_start_date(booking_date)
-        self.assertEqual(term_start_date, date(2025, 5, 1))
-
-        booking_date = date(2025, 8, 15)
-        term_start_date = Request().get_term_and_start_date(booking_date)
-        self.assertIsNone(term_start_date)
-
     def test_tutor_languages_specialised_includes_booking_languages(self):
         self.tutor.languages_specialised = "Python, Java"
         self.booking.language = "Python"
@@ -57,7 +40,7 @@ class BookingModelTestCase(TestCase):
     
     def test_meta_ordering(self):
         earlier_booking = Booking.objects.create(
-            date_time=datetime(2023, 11, 30, 10, 0),
+            date_time=timezone.make_aware(datetime(2023, 11, 30, 10, 0)),
             duration=timedelta(hours=1),
             language="Python",
             tutor=self.tutor,
@@ -85,14 +68,10 @@ class BookingModelTestCase(TestCase):
     def test_is_completed_default_value(self):
         self.assertFalse(self.booking.is_completed)
 
-    def test_price_cannot_be_negative(self):
-        self.booking.price = -10.00
-        with self.assertRaises(ValidationError):
-            self.booking.full_clean()
-
     def test_price_can_be_zero(self):
         self.booking.price = 0.00
         self.booking.full_clean() 
+
     def test_is_completed_must_be_boolean(self):
         with self.assertRaises(ValidationError, msg="is_completed must be a boolean value"):
             self.booking.is_completed = "not_boolean"

@@ -168,11 +168,6 @@ class Request(models.Model):
     def __str__(self):
         return f"{self.tutee.user.full_name()} - {self.request_type} - {self.status}"
     
-    def get_booking_display(self):
-        if self.booking:
-            return self.booking
-        else:
-            return f"New Booking Request: {self.language}"
         
 class NewBookingRequest(models.Model):
     FREQUENCY_CHOICES = [
