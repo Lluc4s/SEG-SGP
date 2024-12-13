@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.test import TestCase
 from tutorials.models import User,Tutor,Request, ChangeCancelBookingRequest, Booking, Tutee  
+from django.core.exceptions import ValidationError
 
 class ChangeCancelBookingRequestModelTestCase(TestCase):
     def setUp(self):
@@ -32,11 +33,14 @@ class ChangeCancelBookingRequestModelTestCase(TestCase):
 
     def test_change_cancel_request_creation(self):
         self.assertEqual(self.change_cancel_request.request, self.request)
-        self.assertEqual(self.change_cancel_request.change_or_cancel, "Cancel")
         self.assertEqual(self.change_cancel_request.booking, self.booking)
     
-    def test_details_can_be_black(self):
-        self.assertEqual(self.change_cancel_request.details,"")
+    def test_details_can_be_blank(self):
+        self.change_cancel_request.details = ""  # Set details to an empty string
+        try:
+            self.change_cancel_request.full_clean()  # This should pass validation
+        except ValidationError:
+            self.fail("ValidationError raised for blank details when it should be allowed.")
     
     def test_default_change_or_cancel(self):
         self.assertEqual(self.change_cancel_request.change_or_cancel, "Cancel")
