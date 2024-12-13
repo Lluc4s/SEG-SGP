@@ -55,6 +55,12 @@ class ChangeCancelBookingRequestFormTestCase(TestCase):
         invalid_data['change_or_cancel'] = ""
         form = ChangeCancelBookingRequestForm(data=invalid_data, tutee=self.tutee)
         self.assertFalse(form.is_valid())
+    
+    def test_form_is_invalid_for_invalid_change_cancel_field(self):
+        invalid_data = self.valid_form_data.copy()
+        invalid_data['change_or_cancel'] = "New"
+        form = ChangeCancelBookingRequestForm(data=invalid_data, tutee=self.tutee)
+        self.assertFalse(form.is_valid())
 
     def test_form_is_invalid_when_no_booking(self):
         invalid_data = self.valid_form_data.copy()
@@ -75,3 +81,25 @@ class ChangeCancelBookingRequestFormTestCase(TestCase):
         form.instance.tutee = self.tutee
         form.save()
         self.assertEqual(form.instance.request.tutee, self.tutee)
+    
+    def test_form_is_invalid_for_completed_booking(self):
+        self.booking.is_completed = True
+        self.booking.save()
+        form = ChangeCancelBookingRequestForm(data=self.valid_form_data, tutee=self.tutee)
+        self.assertFalse(form.is_valid())
+    
+    def test_form_is_invalid_for_other_tutee(self):
+        other_tutee_user = User.objects.get(username="@petrapickles")
+        other_tutee = Tutee.objects.create(user=other_tutee_user)
+        invalid_data = self.valid_form_data.copy()
+        invalid_data['booking'] = self.booking.pk
+        form = ChangeCancelBookingRequestForm(data=invalid_data, tutee=other_tutee)
+        self.assertFalse(form.is_valid())
+    
+    def test_form_is_invalid_for_completed_booking_on_change(self):
+        self.booking.is_completed = True
+        self.booking.save()
+        invalid_data = self.valid_form_data.copy()
+        invalid_data['change_or_cancel'] = "Change"
+        form = ChangeCancelBookingRequestForm(data=invalid_data, tutee=self.tutee)
+        self.assertFalse(form.is_valid())

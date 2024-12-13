@@ -38,9 +38,21 @@ class NewBookingRequestFormTestCase(TestCase):
         form = NewBookingRequestForm(data=invalid_data)
         self.assertFalse(form.is_valid())
 
+    def test_form_is_invalid_for_invalid_frequency(self):
+        invalid_data = self.valid_form_data.copy()
+        invalid_data['frequency'] = "Yearly"
+        form = NewBookingRequestForm(data=invalid_data)
+        self.assertFalse(form.is_valid())
+    
     def test_form_is_invalid_for_empty_language(self):
         invalid_data = self.valid_form_data.copy()
         invalid_data['language'] = ""
+        form = NewBookingRequestForm(data=invalid_data)
+        self.assertFalse(form.is_valid())
+    
+    def test_form_is_invalid_for_invalid_language(self):
+        invalid_data = self.valid_form_data.copy()
+        invalid_data['language'] = "English"
         form = NewBookingRequestForm(data=invalid_data)
         self.assertFalse(form.is_valid())
 
@@ -75,3 +87,34 @@ class NewBookingRequestFormTestCase(TestCase):
         form.instance.tutee = self.tutee
         form.save()
         self.assertEqual(form.instance.request.tutee, self.tutee)
+
+    def test_form_can_save_without_tutee_assignment(self):
+        form = NewBookingRequestForm(data=self.valid_form_data)
+        form.instance.tutee = self.tutee
+        form.save()
+        self.assertEqual(form.instance.request.tutee, self.tutee)
+    
+    def test_form_is_valid_without_details(self):
+        valid_data_without_details = self.valid_form_data.copy()
+        valid_data_without_details['details'] = ""
+        form = NewBookingRequestForm(data=valid_data_without_details)
+        self.assertTrue(form.is_valid())
+    
+    def test_frequency_field_choices(self):
+        form = NewBookingRequestForm()
+        actual_choices = [choice[1] for choice in form.fields['frequency'].choices]
+        expected_choices = ["One-time", "Weekly", "Bi-weekly", "Monthly"]
+        self.assertEqual(expected_choices, actual_choices)
+    
+    def test_language_field_choices(self):
+        form = NewBookingRequestForm()
+        actual_choices = [choice[1] for choice in form.fields['language'].choices]
+        expected_choices = ["---------", "C++", "Python", "Java", "JavaScript", "R", "SQL"]
+        self.assertEqual(expected_choices, actual_choices)
+
+    def test_duration_field_choices(self):
+        form = NewBookingRequestForm()
+        actual_choices = [choice[1] for choice in form.fields['duration'].choices]
+        expected_choices = ["---------", "30 min", "1 hour", "1 hour 30 min", "2 hour", "2 hour 30 min", "3 hour"]
+        self.assertEqual(expected_choices, actual_choices)
+        
