@@ -12,11 +12,11 @@ class LogInViewTestCase(TestCase, LogInTester, MenuTesterMixin):
     fixtures = ['tutorials/tests/fixtures/default_user.json']
 
     def setUp(self):
-        self.url = reverse('log_in')
+        self.url = reverse('')
         self.user = User.objects.get(username='@johndoe')
 
     def test_log_in_url(self):
-        self.assertEqual(self.url,'/log_in/')
+        self.assertEqual(self.url,'/')
 
     def test_get_log_in(self):
         response = self.client.get(self.url)
@@ -33,7 +33,7 @@ class LogInViewTestCase(TestCase, LogInTester, MenuTesterMixin):
 
     def test_get_log_in_with_redirect(self):
         destination_url = reverse('profile')
-        self.url = reverse_with_next('log_in', destination_url)
+        self.url = reverse_with_next('', destination_url)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'log_in.html')
@@ -46,7 +46,7 @@ class LogInViewTestCase(TestCase, LogInTester, MenuTesterMixin):
         self.assertEqual(len(messages_list), 0)
 
     def test_get_log_in_redirects_when_logged_in(self):
-        self.client.login(username=self.user.username, password="Password123")
+        self.client.login(username="@johndoe", password="Password123")
         response = self.client.get(self.url, follow=True)
         redirect_url = reverse('dashboard')
         self.assertRedirects(response, redirect_url, status_code=302, target_status_code=200)
