@@ -37,7 +37,7 @@ urlpatterns = [
     path('requests/', views.RequestsView.as_view(), name='requests'),
     path('new_booking_request', views.NewBookingRequestView.as_view(), name='new_booking_request'),
     path('change_cancel_booking_request', views.ChangeCancelBookingRequestView.as_view(), name='change_cancel_booking_request'),
-    path('requests/<int:request_id>', views.RequestInfoView.as_view()),
+    path('requests/<int:request_id>', views.RequestInfoView.as_view(), name='request_info'),
     path('inbox/', views.inbox, name='inbox'),
     path('send-inquiry/', views.send_inquiry, name='send_inquiry'),
     path('inquiries/respond/<int:inquiry_id>/', views.respond_to_inquiry, name='respond_to_inquiry'),
