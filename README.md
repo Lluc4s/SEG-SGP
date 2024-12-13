@@ -50,4 +50,4 @@ $ python3 manage.py test
 ## Sources
 The packages used by this application are specified in `requirements.txt`
 
-*Declare are other sources here, and remove this line*
+The team used generative AI to get help in explaining some of the topics to get a more thourough understanding of how to work with Django framwork
