@@ -1,10 +1,12 @@
 """Forms for the tutorials app."""
 from django import forms
+from django.forms import ValidationError
 from django.contrib.auth import authenticate
 from django.core.validators import RegexValidator
-from .models import User, Tutor, Tutee, Request, Booking, Inquiry
+from .models import User, Tutor, Tutee, Request, Booking, Inquiry, NewBookingRequest, ChangeCancelBookingRequest
 from django.conf import settings
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 class LogInForm(forms.Form):
     """Form enabling registered users to log in."""
@@ -151,7 +153,7 @@ class TutorSignUpForm(NewPasswordMixin, forms.ModelForm):
 
         return user
 
-class   BookingForm(forms.ModelForm):
+class BookingForm(forms.ModelForm):
     """
     Form enabling admins to create/edit booking.
     """
@@ -209,8 +211,23 @@ class   BookingForm(forms.ModelForm):
         date_time = cleaned_data.get("date_time")
         duration = cleaned_data.get("duration")
 
+        if not isinstance(date_time, datetime):
+            raise forms.ValidationError("Invalid date-time format.")
+
+        if date_time:
+            if date_time < timezone.now():
+                raise forms.ValidationError("The booking date and time cannot be in the past.")
+        else:
+            raise forms.ValidationError("The booking date and time cannot be None")
+        
         # Calculate the end time of the current booking
-        end_time = date_time + duration
+        if date_time and duration:
+            try:
+                end_time = date_time + duration
+            except TypeError:
+                raise ValidationError("Invalid duration.")
+        else:
+            raise ValidationError("Both date_time and duration are required.")
 
         if tutor and language and language not in tutor.get_languages_list():
             self.add_error(
@@ -249,74 +266,136 @@ class   BookingForm(forms.ModelForm):
                 booking.save()
 
         return booking
-
-class RequestForm(forms.ModelForm):
-    """Form enabling tutees to submit a request related to a booking."""
+    
+class NewBookingRequestForm(forms.ModelForm):
+    """Form for creating a new booking request."""
 
     class Meta:
-        model = Request
-        fields = ['booking', 'request_type', 'language', 'frequency', 'details'] 
+        model = NewBookingRequest
+        fields = ['frequency', 'duration', 'language', 'details']
         widgets = {
-            'booking': forms.Select(attrs={'class': 'form-control'}),
-            'request_type': forms.Select(attrs={'class': 'form-control'}),
-            'frequency': forms.Select(attrs={'class': 'form-control'}),
+            'frequency': forms.Select(),
+            'duration': forms.Select(),
+            'language': forms.Select(),
+            'details': forms.Textarea(attrs={
+                'rows': 4,
+                'placeholder': 'Provide additional details if needed (e.g.  web development in Ruby on Rails, front-end coding with Javascript/React.js, and training neural networks with Python/Tensorflow, etc.)',
+            }),
+        }
+        labels = {
+            'frequency': 'Frequency',
+            'duration': 'Duration',
+            'language': 'Preferred Language',
+            'details': 'Additional Details',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['frequency'].empty_label = "Select Frequency"
+        self.fields['duration'].empty_label = "Select Duration"
+        self.fields['language'].empty_label = "Select Language"
+
+    def save(self, commit=True):
+        """Save the new booking request and create the associated Request."""
+        # Create the associated Request instance
+        request = Request.objects.create(
+            tutee=self.instance.tutee,  # Use the appropriate tutee instance if available
+            request_type="New Booking"
+        )
+
+        # Save the NewBookingRequest instance and associate it with the Request
+        instance = super().save(commit=False)
+        instance.request = request
+        if commit:
+            term_start_date = self.instance.request.get_term_start_date()
+
+            if term_start_date:
+                # Calculate the deadline for submitting requests (2 weeks before the term starts)
+                deadline = term_start_date - timedelta(weeks=2)
+
+                # Determine if the request is late
+                if self.instance.request.created_at.date() >= deadline:
+                    self.instance.request.is_late = True
+                else:
+                    self.instance.request.is_late = False
+
+            instance.save()
+        return instance
+
+class ChangeCancelBookingRequestForm(forms.ModelForm):
+    """Form for creating or updating a change/cancel booking request."""
+
+    class Meta:
+        model = ChangeCancelBookingRequest
+        fields = ['booking', 'change_or_cancel', 'details']
+        widgets = {
+            'change_or_cancel': forms.Select(attrs={'class': 'form-control'}),
             'details': forms.Textarea(attrs={
                 'rows': 4,
                 'placeholder': 'Provide additional details if needed',
-                'class': 'form-control'
+                'class': 'form-control',
             }),
-            'language': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'booking': 'Select Booking or Request New Booking',
-            'request_type': 'Request Type',
-            'frequency': 'Frequency',
+            'booking': 'Select Booking',
+            'change_or_cancel': 'Change/Cancel',
             'details': 'Additional Details',
-            'language': 'Preferred Language',
         }
-    
+
     def __init__(self, tutee=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['booking'].queryset = Booking.objects.filter(tutee=tutee)
-        self.fields['booking'].required = False  # Allow the field to be blank (indicates new booking request)
-        self.fields['booking'].empty_label = "Request new Booking"
-        self.fields['request_type'].empty_label = None
-        self.fields['frequency'].empty_label = None
+        if tutee:
+            # Filter bookings based on the tutee
+            queryset = Booking.objects.filter(tutee=tutee)
+            self.fields['booking'].queryset = queryset
+
+            # Check if queryset is empty and update empty_label accordingly
+            if not queryset.exists():
+                self.fields['booking'].empty_label = "No Bookings Available"
+            else:
+                self.fields['booking'].empty_label = "Select Booking"
+        else:
+            # If no tutee, default to empty queryset
+            self.fields['booking'].queryset = Booking.objects.none()
+            self.fields['booking'].empty_label = "No Bookings Available"
 
     def clean(self):
-        """Add custom validation for the form."""
+        """Add custom validation for the details field."""
         cleaned_data = super().clean()
-        booking = cleaned_data.get("booking")
-        request_type = cleaned_data.get("request_type")
-        language = cleaned_data.get("language")
-        
-        # Validation: If no booking is selected, request type must be "New Booking"
-        if not booking and request_type != "New Booking":
-            self.add_error(
-                "request_type", 
-                "Request type must be 'New Booking' when no booking is selected."
-            )
-        
-        if not booking and language == "N/A":
-            self.add_error(
-                "language",
-                "Please select a language when making new booking request"
-            )
+        change_or_cancel = cleaned_data.get('change_or_cancel')
+        details = cleaned_data.get('details')
 
-        # Validation: If a booking is selected, language must be "N/A"
-        if booking and language != "N/A":
-            self.add_error(
-                "language", 
-                "Language must be 'N/A' when a previous booking is selected."
-            )
-        
-        if booking and request_type =="New Booking":
-            self.add_error(
-                "request_type",
-                "Request type must be cancel/change for a chosen booking"
-            )
+        # Validate that details is required when 'Change' is selected
+        if change_or_cancel == 'Change' and not details:
+            self.add_error('details', "Details are required when 'Change' is selected.")
 
         return cleaned_data
+
+    def save(self, commit=True):
+        """Save the new booking request and create the associated Request."""
+        # Create the associated Request instance
+        request = Request.objects.create(
+            tutee=self.instance.tutee,  # Use the appropriate tutee instance if available
+            request_type="Change/Cancel Booking"
+        )
+
+        # Save the NewBookingRequest instance and associate it with the Request
+        instance = super().save(commit=False)
+        instance.request = request
+        if commit:
+            term_start_date = self.instance.request.get_term_start_date()
+
+            if term_start_date:
+                # Calculate the deadline for submitting requests (2 weeks before the term starts)
+                deadline = term_start_date - timedelta(weeks=2)
+
+                # Determine if the request is late
+                if self.instance.request.created_at.date() >= deadline:
+                    self.instance.request.is_late = True
+                else:
+                    self.instance.request.is_late = False
+            instance.save()
+        return instance
         
 class InquiryForm(forms.ModelForm):
     recipient = forms.ModelChoiceField(

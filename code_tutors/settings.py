@@ -159,6 +159,7 @@ LANGUAGE_CHOICES = [
 # # Available durations
 DURATION_CHOICES = [
         (timedelta(minutes=30), "30 min"),   # 30 minutes
+        (timedelta(minutes=60), "1 hour"),   # 30 minutes
         (timedelta(minutes=90), "1 hour 30 min"),  # 1 hour 30 minutes
         (timedelta(minutes=120), "2 hour"), # 2 hours
         (timedelta(minutes=150), "2 hour 30 min"), # 2 hours 30 minutes
