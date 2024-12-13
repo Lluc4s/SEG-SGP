@@ -16,6 +16,7 @@ from django.http import HttpResponse
 from django.utils.timezone import now
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from urllib.parse import urlencode
+from django.core.exceptions import PermissionDenied
 
 @login_required
 def tutors(request):
@@ -198,6 +199,15 @@ class EditBookingView(LoginRequiredMixin, UpdateView):
         """Return redirect URL after successful update."""
         messages.add_message(self.request, messages.SUCCESS, "Booking updated!")
         return reverse(settings.REDIRECT_URL_WHEN_LOGGED_IN)
+    
+    from django.core.exceptions import PermissionDenied
+
+    def dispatch(self, request, *args, **kwargs):
+        booking = self.get_object()
+        if not request.user.is_staff and booking.tutor.user != request.user:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
     
 class RequestsView(LoginRequiredMixin, TemplateView):
     template_name = 'requests.html'
