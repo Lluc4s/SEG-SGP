@@ -61,16 +61,22 @@ class BookingModelTestCase(TestCase):
             self.booking.full_clean()
 
     def test_language_must_be_valid_choice(self):
-        self.booking.language = "InvalidLanguage"
+        self.booking.language = "nno"
         with self.assertRaises(ValidationError):
             self.booking.full_clean()
 
     def test_is_completed_default_value(self):
         self.assertFalse(self.booking.is_completed)
 
-    def test_price_can_be_zero(self):
+    def test_price_must_be_positive(self):
+        self.booking.price = -5.00
+        with self.assertRaises(ValidationError):
+            self.booking.full_clean()
+
+    def test_price_cannot_be_zero(self):
         self.booking.price = 0.00
-        self.booking.full_clean() 
+        with self.assertRaises(ValidationError):
+            self.booking.full_clean()
 
     def test_is_completed_must_be_boolean(self):
         with self.assertRaises(ValidationError, msg="is_completed must be a boolean value"):
@@ -78,7 +84,7 @@ class BookingModelTestCase(TestCase):
             self.booking.full_clean()
 
     def test_is_paid_must_be_boolean(self):
-        with self.assertRaises(ValidationError, msg="is_completed must be a boolean value"):
+        with self.assertRaises(ValidationError, msg="is_paid must be a boolean value"):
             self.booking.is_paid = "not_boolean"
             self.booking.full_clean()
 

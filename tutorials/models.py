@@ -106,6 +106,12 @@ class Booking(models.Model):
 
     class Meta:
         ordering = ["date_time"]
+
+    def clean(self):
+        super().clean()
+
+        if self.price <= 0:
+            raise ValidationError({'price': "The price must be a positive number greater than zero."})
         
     def __str__(self):
         # Calculate the end time based on the duration
